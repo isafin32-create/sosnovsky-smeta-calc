@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Калькулятор сметы — отделка квартир</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f2ec;
+    --paper-line:#dcd6c6;
+    --ink:#22271f;
+    --ink-soft:#5b6156;
+    --line:#c9c2ac;
+    --accent:#8a5a2b;
+    --accent-soft:#f0e6d6;
+    --panel:#ffffff;
+    --panel-line:#e4dfd0;
+    --danger:#a3402f;
+    --radius:2px;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: 'IBM Plex Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --slab: 'Zilla Slab', Georgia, 'Times New Roman', serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1b1c18; --paper-line:#2c2d26; --ink:#eceae2; --ink-soft:#a9a89c;
+      --line:#3a3a30; --panel:#232420; --panel-line:#33342c; --accent:#c98b4a; --accent-soft:#332a1c;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1b1c18; --paper-line:#2c2d26; --ink:#eceae2; --ink-soft:#a9a89c;
+    --line:#3a3a30; --panel:#232420; --panel-line:#33342c; --accent:#c98b4a; --accent-soft:#332a1c;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  html{scroll-padding-top: env(safe-area-inset-top, 0px);}
+  body{
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 38px, var(--paper-line) 38px 39px),
+      repeating-linear-gradient(90deg, transparent 0 38px, var(--paper-line) 38px 39px);
+    background-size: 38px 38px;
+    min-height:100%;
+  }
+  .wrap{ max-width:1220px; margin:0 auto; padding: 28px 20px 80px; }
+  header.top{
+    display:flex; justify-content:space-between; align-items:flex-end; gap:16px;
+    border-bottom: 2px solid var(--ink); padding-bottom:16px; margin-bottom:22px; flex-wrap:wrap;
+  }
+  .brand{ font-family:var(--mono); font-size:12px; letter-spacing:.04em; color:var(--ink-soft); }
+  h1{ font-family:var(--slab); font-weight:700; font-size:clamp(24px,3.4vw,34px); margin:2px 0 0; letter-spacing:-0.01em; }
+  .sub{ color:var(--ink-soft); font-size:14px; max-width:62ch; margin-top:4px; }
+  .theme-toggle{
+    font-family:var(--mono); font-size:11px; background:none; border:1px solid var(--line);
+    color:var(--ink-soft); padding:6px 10px; border-radius:var(--radius); cursor:pointer;
+  }
+
+  nav.tabs{ display:flex; gap:2px; margin-bottom:18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  nav.tabs button{
+    font-family:var(--sans); font-weight:600; font-size:14px; background:none; border:none;
+    padding:10px 16px; cursor:pointer; color:var(--ink-soft); border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  nav.tabs button.active{ color:var(--ink); border-bottom-color:var(--accent); }
+  nav.tabs button:hover{ color:var(--ink); }
+
+  .panel{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius); padding:22px; margin-bottom:18px; }
+  .panel h2{ font-family:var(--slab); font-size:19px; margin:0 0 4px; font-weight:600; }
+  .panel h3{ font-family:var(--slab); font-size:15px; margin:0 0 4px; font-weight:600; }
+  .panel .hint{ color:var(--ink-soft); font-size:13px; margin:0 0 16px; max-width:72ch; }
+
+  .grid{ display:grid; gap:14px; }
+  .grid.cols-2{ grid-template-columns:1fr 1fr; }
+  .grid.cols-3{ grid-template-columns:1fr 1fr 1fr; }
+  .grid.cols-5{ grid-template-columns:repeat(5,1fr); }
+  @media (max-width:760px){ .grid.cols-5{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:640px){ .grid.cols-2,.grid.cols-3{ grid-template-columns:1fr; } }
+
+  label.field{ display:flex; flex-direction:column; gap:5px; font-size:13px; color:var(--ink-soft); }
+  label.field span{ font-weight:600; color:var(--ink); }
+  input,select,textarea{
+    font-family:var(--sans); font-size:14px; color:var(--ink); background:var(--paper);
+    border:1px solid var(--line); border-radius:var(--radius); padding:8px 10px; width:100%;
+  }
+  input:focus,select:focus,textarea:focus,button:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  input[type="checkbox"]{ width:16px; height:16px; }
+  .check-row{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); }
+
+  button.btn{
+    font-family:var(--sans); font-weight:600; font-size:13px; border-radius:var(--radius);
+    border:1px solid var(--ink); background:var(--ink); color:var(--paper); padding:9px 15px; cursor:pointer;
+  }
+  button.btn:hover{ opacity:.88; }
+  button.btn.ghost{ background:none; color:var(--ink); border-color:var(--line); }
+  button.btn.danger{ background:none; color:var(--danger); border-color:var(--danger); }
+  button.btn.small{ padding:5px 10px; font-size:12px; }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+
+  .room-card{ border:1px solid var(--panel-line); border-radius:var(--radius); padding:16px; margin-bottom:14px; background:var(--paper); }
+  .room-card .room-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+  .room-card .room-head input{ font-weight:600; font-size:15px; max-width:280px; }
+  .section-label{ font-family:var(--mono); font-size:11px; letter-spacing:.04em; color:var(--ink-soft); margin:16px 0 8px; padding-top:12px; border-top:1px dashed var(--line); }
+  .checks{ display:flex; flex-wrap:wrap; gap:14px 22px; margin-top:4px; }
+
+  .electric-toggle{
+    display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none;
+    margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);
+  }
+  .electric-toggle span.lbl{ font-weight:600; font-size:13.5px; }
+  .electric-toggle span.arrow{ font-family:var(--mono); color:var(--ink-soft); font-size:12px; }
+  .electric-body{ margin-top:12px; }
+  .electric-body.collapsed{ display:none; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ text-align:left; padding:7px 9px; border-bottom:1px solid var(--panel-line); vertical-align:middle; }
+  th{ font-family:var(--mono); font-size:10.5px; letter-spacing:.03em; color:var(--ink-soft); font-weight:600; }
+  td.num, th.num{ text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  tr.total-row td{ border-top:2px solid var(--ink); border-bottom:none; font-weight:700; font-family:var(--mono); font-size:15px; }
+  tr.subtotal-row td{ font-family:var(--mono); color:var(--ink-soft); }
+  .cat-badge{ font-family:var(--mono); font-size:10px; color:var(--ink-soft); border:1px solid var(--line); border-radius:20px; padding:2px 7px; white-space:nowrap; }
+  .table-scroll{ overflow-x:auto; }
+  td input, td select{ padding:5px 7px; font-size:13px; }
+  td.qty-cell input, td.cost-cell input{ width:72px; }
+  td.actions{ text-align:right; white-space:nowrap; }
+  th.master-col, td.master-col{ background:var(--accent-soft); }
+
+  .empty{ color:var(--ink-soft); font-size:13px; padding:18px 0; text-align:center; border:1px dashed var(--line); border-radius:var(--radius); }
+
+  .saved-bar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+  .saved-bar select{ max-width:260px; }
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:var(--radius);
+    font-size:13px; opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; z-index:50;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .legend{ display:flex; gap:16px; font-size:12px; color:var(--ink-soft); margin-top:10px; flex-wrap:wrap; }
+  .legend .sw{ display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+
+  @media print{
+    body{ background:#fff; }
+    nav.tabs, .no-print, .theme-toggle, .saved-bar, .btn-row, .checklist-panel, .master-col, .legend{ display:none !important; }
+    .panel{ border:none; padding:0; margin-bottom:20px; break-inside:avoid; }
+    .wrap{ max-width:none; padding:0; }
+    header.top{ border-bottom:2px solid #000; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand">PRAGMA · МОДУЛЬ 1 ИЗ ТЗ</div>
+      <h1>Калькулятор предварительной сметы</h1>
+      <div class="sub">Чек-лист объекта → автоподбор позиций из прайс-листа → смета с ценой мастера и ценой для клиента.</div>
+    </div>
+    <button class="theme-toggle no-print" id="themeToggle">тёмная тема</button>
+  </header>
+
+  <nav class="tabs no-print">
+    <button data-tab="object" class="active">Объект и чек-лист</button>
+    <button data-tab="smeta">Смета</button>
+    <button data-tab="prices">Прайс-лист</button>
+  </nav>
+
+  <!-- ================= OBJECT / CHECKLIST TAB ================= -->
+  <section id="tab-object" class="tab-panel checklist-panel">
+
+    <div class="panel no-print saved-bar">
+      <select id="savedProjects"><option value="">— сохранённые объекты —</option></select>
+      <button class="btn ghost small" id="loadProjectBtn">Загрузить</button>
+      <button class="btn ghost small" id="deleteProjectBtn">Удалить</button>
+      <span style="flex:1"></span>
+      <button class="btn small" id="saveProjectBtn">Сохранить объект</button>
+    </div>
+
+    <div class="panel">
+      <h2>Данные объекта</h2>
+      <p class="hint">Единый чек-лист вместо памяти замерщика — заполняется на первом выезде.</p>
+      <div class="grid cols-3">
+        <label class="field"><span>Заказчик</span><input id="clientName" placeholder="Фамилия Имя Отчество"></label>
+        <label class="field"><span>Адрес объекта</span><input id="clientAddress" placeholder="г. Казань, ул. …"></label>
+        <label class="field"><span>Телефон заказчика</span><input id="clientPhone" placeholder="+7 ___ ___-__-__"></label>
+      </div>
+      <div class="grid cols-3" style="margin-top:14px;">
+        <label class="field"><span>Дата обращения</span><input id="visitDate" type="date"></label>
+        <label class="field"><span>Есть дизайн-проект?</span>
+          <select id="hasDesignProject"><option value="no">Нет</option><option value="yes">Да</option></select>
+        </label>
+        <label class="field"><span>Наценка (надбавка к цене мастера), %</span><input id="markupPct" type="number" min="0" step="1" value="30"></label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h2>Помещения</h2>
+          <p class="hint">Замеры и виды отделки по каждому помещению — модуль сам подберёт позиции сметы.</p>
+        </div>
+        <button class="btn no-print" id="addRoomBtn">+ Добавить помещение</button>
+      </div>
+      <div id="roomsList"></div>
+      <div id="roomsEmpty" class="empty">Помещений пока нет — добавьте первое.</div>
+    </div>
+
+    <div class="panel no-print">
+      <button class="btn" id="generateSmetaBtn">Сформировать смету по чек-листу →</button>
+      <p class="hint" style="margin-top:10px;">Добавит позиции в смету по выбранным работам. Можно запускать повторно — авто-позиции пересчитаются, строки, добавленные вручную, не тронутся.</p>
+    </div>
+  </section>
+
+  <!-- ================= SMETA TAB ================= -->
+  <section id="tab-smeta" class="tab-panel" style="display:none;">
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h2>Предварительная смета</h2>
+          <p class="hint">Жёлтым — себестоимость (цена мастера): видна только вам, в печать и в текстовую выгрузку для клиента не попадает.</p>
+        </div>
+        <button class="btn ghost no-print small" id="addLineBtn">+ Строка вручную</button>
+      </div>
+
+      <div class="table-scroll">
+        <table id="smetaTable">
+          <thead>
+            <tr>
+              <th>Категория</th><th>Наименование</th><th>Помещение</th>
+              <th class="num">Кол-во</th><th>Ед.</th>
+              <th class="num master-col">Цена мастера, ₽</th>
+              <th class="num">Цена клиенту, ₽</th>
+              <th class="num master-col">Сумма мастеру, ₽</th>
+              <th class="num">Сумма клиенту, ₽</th>
+              <th class="no-print"></th>
+            </tr>
+          </thead>
+          <tbody id="smetaBody"></tbody>
+          <tfoot>
+            <tr class="subtotal-row">
+              <td colspan="7">Итого себестоимость (мастеру)</td>
+              <td class="num master-col" id="masterSubtotalCell">0</td><td class="no-print"></td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="7">Итого к оплате заказчиком</td>
+              <td class="num" id="totalCell">0 ₽</td><td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div id="smetaEmpty" class="empty">Смета пуста — заполните чек-лист по помещениям и нажмите «Сформировать смету», либо добавьте строку вручную.</div>
+
+      <div class="legend no-print">
+        <span><span class="sw" style="background:var(--accent-soft); border:1px solid var(--line);"></span>видно только вам (не печатается и не копируется в текст для клиента)</span>
+      </div>
+
+      <div class="btn-row no-print">
+        <button class="btn" id="printBtn">Печать / сохранить как PDF (для клиента)</button>
+        <button class="btn ghost" id="copyTextBtn">Скопировать как текст (для клиента)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PRICE LIST TAB ================= -->
+  <section id="tab-prices" class="tab-panel" style="display:none;">
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h2>Прайс-лист (справочник расценок)</h2>
+          <p class="hint">Здесь — цена мастера (себестоимость за работу, без материала). Цена для клиента считается автоматически: себестоимость + наценка, которую вы задаёте на вкладке «Объект».</p>
+        </div>
+        <button class="btn ghost no-print small" id="addPriceBtn">+ Позиция</button>
+      </div>
+      <div class="table-scroll">
+        <table id="priceTable">
+          <thead><tr><th>Категория</th><th>Наименование</th><th>Ед.</th><th class="num">Цена мастера, ₽</th><th class="no-print"></th></tr></thead>
+          <tbody id="priceBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- constants ---------- */
+  var UNITS = ["м²","м.п.","шт.","компл.","точка","м³"];
+  var CATEGORIES = ["Демонтаж","Полы","Стены","Потолки","Электрика","Сантехника","Прочее"];
+
+  // cost = цена МАСТЕРА (себестоимость). Клиентская цена = cost * (1 + наценка/100).
+  var DEFAULT_PRICES = [
+    {id:"dm1", cat:"Демонтаж", name:"Демонтаж старого напольного покрытия", unit:"м²", cost:150},
+    {id:"dm2", cat:"Демонтаж", name:"Демонтаж старых обоев / окраски со стен", unit:"м²", cost:120},
+    {id:"dm3", cat:"Демонтаж", name:"Демонтаж подвесного / натяжного потолка", unit:"м²", cost:130},
+    {id:"dm4", cat:"Демонтаж", name:"Демонтаж сантехники (комплект)", unit:"компл.", cost:3500},
+    {id:"dm5", cat:"Демонтаж", name:"Вывоз строительного мусора", unit:"м³", cost:1200},
+
+    {id:"fl1", cat:"Полы", name:"Стяжка пола полусухая", unit:"м²", cost:500},
+    {id:"fl2", cat:"Полы", name:"Стяжка пола мокрая (ЦПС)", unit:"м²", cost:550},
+    {id:"fl3", cat:"Полы", name:"Выравнитель пола (наливной)", unit:"м²", cost:350},
+    {id:"fl4", cat:"Полы", name:"Укладка ламината", unit:"м²", cost:450},
+    {id:"fl5", cat:"Полы", name:"Укладка пробкового покрытия", unit:"м²", cost:500},
+    {id:"fl6", cat:"Полы", name:"Укладка паркета", unit:"м²", cost:900},
+    {id:"fl7", cat:"Полы", name:"Укладка инженерной доски", unit:"м²", cost:850},
+    {id:"fl8", cat:"Полы", name:"Укладка линолеума", unit:"м²", cost:300},
+    {id:"fl9", cat:"Полы", name:"Укладка керамической плитки на пол", unit:"м²", cost:1200},
+
+    {id:"wl1", cat:"Стены", name:"Штукатурка стен по маякам", unit:"м²", cost:700},
+    {id:"wl2", cat:"Стены", name:"Шпатлёвка стен под покраску", unit:"м²", cost:450},
+    {id:"wl3", cat:"Стены", name:"Оклейка обоями", unit:"м²", cost:350},
+    {id:"wl4", cat:"Стены", name:"Покраска стен, 2 слоя", unit:"м²", cost:400},
+    {id:"wl5", cat:"Стены", name:"Укладка керамической плитки на стены", unit:"м²", cost:1400},
+    {id:"wl6", cat:"Стены", name:"Декоративная штукатурка", unit:"м²", cost:1200},
+
+    {id:"cl1", cat:"Потолки", name:"Монтаж натяжного потолка", unit:"м²", cost:750},
+    {id:"cl2", cat:"Потолки", name:"Покраска потолка, 2 слоя", unit:"м²", cost:350},
+    {id:"cl3", cat:"Потолки", name:"Монтаж потолка из ГКЛ, один уровень", unit:"м²", cost:900},
+
+    {id:"el0", cat:"Электрика", name:"Электромонтажные работы (штробление, разводка)", unit:"м²", cost:600},
+    {id:"el1", cat:"Электрика", name:"Установка розетки", unit:"шт.", cost:350},
+    {id:"el2", cat:"Электрика", name:"Установка выключателя", unit:"шт.", cost:350},
+    {id:"el3", cat:"Электрика", name:"Установка проходного выключателя", unit:"шт.", cost:550},
+    {id:"el4", cat:"Электрика", name:"Монтаж интернет / ТВ точки", unit:"шт.", cost:450},
+    {id:"el5", cat:"Электрика", name:"Установка терморегулятора", unit:"шт.", cost:900},
+    {id:"el6", cat:"Электрика", name:"Монтаж точечного светильника", unit:"шт.", cost:300},
+    {id:"el7", cat:"Электрика", name:"Установка бра", unit:"шт.", cost:400},
+    {id:"el8", cat:"Электрика", name:"Установка люстры", unit:"шт.", cost:600},
+    {id:"el9", cat:"Электрика", name:"Силовая электроточка", unit:"шт.", cost:700},
+    {id:"el10", cat:"Электрика", name:"Вывод кабеля (под кондиционер)", unit:"шт.", cost:1200},
+
+    {id:"pl1", cat:"Сантехника", name:"Сантехнические работы в санузле (комплект)", unit:"компл.", cost:25000},
+    {id:"pl2", cat:"Сантехника", name:"Замена стояков", unit:"точка", cost:4500},
+    {id:"pl3", cat:"Сантехника", name:"Подключение сантехнического прибора", unit:"шт.", cost:2500},
+
+    {id:"ot1", cat:"Прочее", name:"Установка межкомнатной двери (монтаж)", unit:"шт.", cost:6000},
+    {id:"ot2", cat:"Прочее", name:"Монтаж плинтусов", unit:"м.п.", cost:200},
+    {id:"ot3", cat:"Прочее", name:"Монтаж откосов (окна/двери)", unit:"м.п.", cost:700}
+  ];
+
+  var ELECTRIC_FIELDS = [
+    ["socketsCount","el1","Розетки, шт."],
+    ["switchesCount","el2","Выключатели, шт."],
+    ["passSwitchesCount","el3","Проходные выключатели, шт."],
+    ["netTvCount","el4","Интернет / ТВ точки, шт."],
+    ["thermostatCount","el5","Терморегуляторы, шт."],
+    ["spotlightCount","el6","Точечные светильники, шт."],
+    ["sconceCount","el7","Бра, шт."],
+    ["chandelierCount","el8","Люстры, шт."],
+    ["powerPointCount","el9","Силовые электроточки, шт."],
+    ["cableOutletCount","el10","Вывод кабеля (конд.), шт."]
+  ];
+
+  /* ---------- state ---------- */
+  var state = {
+    client: {name:"", address:"", phone:"", visitDate:"", hasDesign:"no"},
+    markup: 30,
+    rooms: [],
+    prices: JSON.parse(JSON.stringify(DEFAULT_PRICES)),
+    smeta: [] // {id, source:'auto'|'manual', roomId, roomName, priceId, cat, name, unit, cost, qty}
+  };
+
+  var uid = function(prefix){ return prefix + Math.random().toString(36).slice(2,9); };
+
+  /* ---------- storage ---------- */
+  var STORE_KEY = "pragma_smeta_projects_v2";
+  function readStore(){
+    try{ var raw = localStorage.getItem(STORE_KEY); return raw ? JSON.parse(raw) : {}; }
+    catch(e){ return {}; }
+  }
+  function writeStore(obj){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(obj)); return true; }
+    catch(e){ return false; }
+  }
+
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  function fmt(n){ return Math.round(n).toLocaleString("ru-RU"); }
+  function clientUnitPrice(cost){ return cost * (1 + (state.markup||0)/100); }
+
+  /* ---------- price list ---------- */
+  function priceById(id){
+    for(var i=0;i<state.prices.length;i++) if(state.prices[i].id===id) return state.prices[i];
+    return null;
+  }
+
+  function renderPriceTable(){
+    var body = document.getElementById("priceBody");
+    body.innerHTML = "";
+    state.prices.forEach(function(row){
+      var tr = document.createElement("tr");
+
+      var tdCat = document.createElement("td");
+      var selCat = document.createElement("select");
+      CATEGORIES.forEach(function(c){
+        var o=document.createElement("option"); o.value=c; o.textContent=c;
+        if(c===row.cat) o.selected=true; selCat.appendChild(o);
+      });
+      selCat.addEventListener("change", function(){ row.cat = selCat.value; });
+      tdCat.appendChild(selCat);
+
+      var tdName = document.createElement("td");
+      var inName = document.createElement("input");
+      inName.value = row.name;
+      inName.addEventListener("input", function(){ row.name = inName.value; });
+      tdName.appendChild(inName);
+
+      var tdUnit = document.createElement("td");
+      var selUnit = document.createElement("select");
+      UNITS.forEach(function(u){
+        var o=document.createElement("option"); o.value=u; o.textContent=u;
+        if(u===row.unit) o.selected=true; selUnit.appendChild(o);
+      });
+      selUnit.addEventListener("change", function(){ row.unit = selUnit.value; });
+      tdUnit.appendChild(selUnit);
+
+      var tdCost = document.createElement("td"); tdCost.className="num";
+      var inCost = document.createElement("input");
+      inCost.type="number"; inCost.min="0"; inCost.step="1"; inCost.value=row.cost; inCost.style.textAlign="right";
+      inCost.addEventListener("input", function(){ row.cost = parseFloat(inCost.value)||0; renderSmeta(); });
+      tdCost.appendChild(inCost);
+
+      var tdActions = document.createElement("td"); tdActions.className="no-print actions";
+      var del = document.createElement("button");
+      del.className="btn danger small"; del.textContent="Удалить";
+      del.addEventListener("click", function(){
+        state.prices = state.prices.filter(function(p){return p.id!==row.id;});
+        renderPriceTable();
+      });
+      tdActions.appendChild(del);
+
+      tr.appendChild(tdCat); tr.appendChild(tdName); tr.appendChild(tdUnit); tr.appendChild(tdCost); tr.appendChild(tdActions);
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById("addPriceBtn").addEventListener("click", function(){
+    state.prices.push({id:uid("p_"), cat:"Прочее", name:"Новая позиция", unit:"м²", cost:0});
+    renderPriceTable();
+  });
+
+  /* ---------- rooms ---------- */
+  function blankRoom(){
+    return {
+      id: uid("r_"), name:"Помещение",
+      floorArea:0, wallArea:0, ceilingArea:0, perimeter:0, slopesLength:0,
+      floorType:"", wallType:"", ceilType:"",
+      demontage:false, electricWork:false, plumbing:false,
+      socketsCount:0, switchesCount:0, passSwitchesCount:0, netTvCount:0, thermostatCount:0,
+      spotlightCount:0, sconceCount:0, chandelierCount:0, powerPointCount:0, cableOutletCount:0,
+      electricOpen:false
+    };
+  }
+
+  function addRoom(prefill){
+    state.rooms.push(prefill || blankRoom());
+    renderRooms();
+  }
+
+  function renderRooms(){
+    var list = document.getElementById("roomsList");
+    list.innerHTML = "";
+    document.getElementById("roomsEmpty").style.display = state.rooms.length ? "none" : "block";
+
+    state.rooms.forEach(function(room){
+      var card = document.createElement("div");
+      card.className = "room-card";
+
+      var head = document.createElement("div"); head.className = "room-head";
+      var nameInput = document.createElement("input");
+      nameInput.value = room.name;
+      nameInput.addEventListener("input", function(){ room.name = nameInput.value; });
+      var delBtn = document.createElement("button");
+      delBtn.className = "btn danger small no-print"; delBtn.textContent = "Удалить помещение";
+      delBtn.addEventListener("click", function(){
+        state.rooms = state.rooms.filter(function(r){return r.id!==room.id;});
+        state.smeta = state.smeta.filter(function(l){return l.roomId!==room.id;});
+        renderRooms(); renderSmeta();
+      });
+      head.appendChild(nameInput); head.appendChild(delBtn);
+
+      function fieldNum(labelText, key, step){
+        var lab = document.createElement("label"); lab.className="field";
+        var sp = document.createElement("span"); sp.textContent = labelText;
+        var inp = document.createElement("input");
+        inp.type="number"; inp.min="0"; inp.step=step||"0.1"; inp.value = room[key];
+        inp.addEventListener("input", function(){ room[key] = parseFloat(inp.value)||0; });
+        lab.appendChild(sp); lab.appendChild(inp);
+        return lab;
+      }
+      function fieldSelect(labelText, key, cat){
+        var lab = document.createElement("label"); lab.className="field";
+        var sp = document.createElement("span"); sp.textContent = labelText;
+        var sel = document.createElement("select");
+        var blank = document.createElement("option"); blank.value=""; blank.textContent="— не выбрано —";
+        sel.appendChild(blank);
+        state.prices.filter(function(p){return p.cat===cat;}).forEach(function(p){
+          var o=document.createElement("option"); o.value=p.id; o.textContent=p.name;
+          if(p.id===room[key]) o.selected=true;
+          sel.appendChild(o);
+        });
+        sel.addEventListener("change", function(){ room[key] = sel.value; });
+        lab.appendChild(sp); lab.appendChild(sel);
+        return lab;
+      }
+
+      var measureLabel = document.createElement("div"); measureLabel.className="section-label"; measureLabel.textContent = "ЗАМЕРЫ";
+      var gridMeasure = document.createElement("div"); gridMeasure.className = "grid cols-5";
+      gridMeasure.appendChild(fieldNum("Площадь пола, м²", "floorArea"));
+      gridMeasure.appendChild(fieldNum("Площадь стен, м²", "wallArea"));
+      gridMeasure.appendChild(fieldNum("Площадь потолка, м²", "ceilingArea"));
+      gridMeasure.appendChild(fieldNum("Периметр помещения, пог.м", "perimeter"));
+      gridMeasure.appendChild(fieldNum("Откосы (окна/двери), пог.м", "slopesLength"));
+
+      var finishLabel = document.createElement("div"); finishLabel.className="section-label"; finishLabel.textContent = "ВИДЫ ОТДЕЛКИ";
+      var gridFinish = document.createElement("div"); gridFinish.className = "grid cols-3";
+      gridFinish.appendChild(fieldSelect("Тип нового пола", "floorType", "Полы"));
+      gridFinish.appendChild(fieldSelect("Отделка стен", "wallType", "Стены"));
+      gridFinish.appendChild(fieldSelect("Тип потолка", "ceilType", "Потолки"));
+
+      var checksRow = document.createElement("div"); checksRow.className = "checks";
+      checksRow.style.borderTop = "1px dashed var(--line)"; checksRow.style.paddingTop="14px"; checksRow.style.marginTop="16px";
+      [["demontage","Нужен демонтаж старой отделки"],
+       ["electricWork","Электромонтажные работы (штробление/разводка)"],
+       ["plumbing","Сантехнические работы (санузел, комплект)"]].forEach(function(pair){
+        var row = document.createElement("label"); row.className="check-row";
+        var cb = document.createElement("input"); cb.type="checkbox"; cb.checked = !!room[pair[0]];
+        cb.addEventListener("change", function(){ room[pair[0]] = cb.checked; });
+        var sp = document.createElement("span"); sp.textContent = pair[1];
+        row.appendChild(cb); row.appendChild(sp);
+        checksRow.appendChild(row);
+      });
+
+      var elToggle = document.createElement("div"); elToggle.className = "electric-toggle";
+      var elLbl = document.createElement("span"); elLbl.className="lbl";
+      elLbl.textContent = "Электрика: точки и приборы";
+      var elArrow = document.createElement("span"); elArrow.className="arrow"; elArrow.textContent = room.electricOpen ? "свернуть ▴" : "развернуть ▾";
+      elToggle.appendChild(elLbl); elToggle.appendChild(elArrow);
+
+      var elBody = document.createElement("div"); elBody.className = "electric-body" + (room.electricOpen ? "" : " collapsed");
+      var elGrid = document.createElement("div"); elGrid.className = "grid cols-5";
+      ELECTRIC_FIELDS.forEach(function(f){ elGrid.appendChild(fieldNum(f[2], f[0], "1")); });
+      elBody.appendChild(elGrid);
+
+      elToggle.addEventListener("click", function(){
+        room.electricOpen = !room.electricOpen;
+        elBody.classList.toggle("collapsed", !room.electricOpen);
+        elArrow.textContent = room.electricOpen ? "свернуть ▴" : "развернуть ▾";
+      });
+
+      card.appendChild(head);
+      card.appendChild(measureLabel); card.appendChild(gridMeasure);
+      card.appendChild(finishLabel); card.appendChild(gridFinish);
+      card.appendChild(checksRow);
+      card.appendChild(elToggle); card.appendChild(elBody);
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById("addRoomBtn").addEventListener("click", function(){ addRoom(); });
+
+  /* ---------- smeta generation ---------- */
+  function findByNamePart(cat, part){
+    return state.prices.filter(function(p){ return p.cat===cat && p.name.indexOf(part)>-1; })[0];
+  }
+
+  function generateSmetaFromChecklist(){
+    state.smeta = state.smeta.filter(function(l){ return l.source !== "auto"; });
+
+    state.rooms.forEach(function(room){
+      function pushAuto(priceId, qty){
+        if(!priceId || !qty) return;
+        var p = priceById(priceId);
+        if(!p) return;
+        state.smeta.push({
+          id: uid("s_"), source:"auto", roomId:room.id, roomName:room.name,
+          priceId:p.id, cat:p.cat, name:p.name, unit:p.unit, cost:p.cost, qty: qty
+        });
+      }
+
+      if(room.demontage){
+        var dmFloor = findByNamePart("Демонтаж","напольного");
+        if(dmFloor) pushAuto(dmFloor.id, room.floorArea);
+        var dmWall = findByNamePart("Демонтаж","стен");
+        if(dmWall) pushAuto(dmWall.id, room.wallArea);
+        var dmCeil = findByNamePart("Демонтаж","потолка");
+        if(dmCeil && room.ceilType) pushAuto(dmCeil.id, room.ceilingArea);
+      }
+
+      if(room.floorType) pushAuto(room.floorType, room.floorArea);
+      if(room.wallType) pushAuto(room.wallType, room.wallArea);
+      if(room.ceilType) pushAuto(room.ceilType, room.ceilingArea);
+
+      if(room.floorType && room.perimeter) pushAuto("ot2", room.perimeter);
+      if(room.slopesLength) pushAuto("ot3", room.slopesLength);
+
+      if(room.electricWork) pushAuto("el0", room.floorArea);
+      ELECTRIC_FIELDS.forEach(function(f){
+        var qty = room[f[0]];
+        if(qty) pushAuto(f[1], qty);
+      });
+
+      if(room.plumbing) pushAuto("pl1", 1);
+    });
+
+    renderSmeta();
+    document.querySelector('nav.tabs button[data-tab="smeta"]').click();
+    toast("Смета сформирована по чек-листу");
+  }
+  document.getElementById("generateSmetaBtn").addEventListener("click", generateSmetaFromChecklist);
+
+  function addManualLine(){
+    if(!state.prices.length) return;
+    var p = state.prices[0];
+    state.smeta.push({
+      id: uid("s_"), source:"manual", roomId:"", roomName:"",
+      priceId:p.id, cat:p.cat, name:p.name, unit:p.unit, cost:p.cost, qty:1
+    });
+    renderSmeta();
+  }
+  document.getElementById("addLineBtn").addEventListener("click", addManualLine);
+
+  function renderSmeta(){
+    var body = document.getElementById("smetaBody");
+    body.innerHTML = "";
+    document.getElementById("smetaEmpty").style.display = state.smeta.length ? "none" : "block";
+
+    var masterSubtotal = 0, clientSubtotal = 0;
+    state.smeta.forEach(function(line){
+      var unitClient = clientUnitPrice(line.cost||0);
+      var masterSum = (line.cost||0) * (line.qty||0);
+      var clientSum = unitClient * (line.qty||0);
+      masterSubtotal += masterSum; clientSubtotal += clientSum;
+
+      var tr = document.createElement("tr");
+
+      var tdCat = document.createElement("td");
+      var badge = document.createElement("span"); badge.className="cat-badge"; badge.textContent = line.cat;
+      tdCat.appendChild(badge);
+
+      var tdName = document.createElement("td"); tdName.textContent = line.name;
+      var tdRoom = document.createElement("td"); tdRoom.textContent = line.roomName || "—"; tdRoom.style.color="var(--ink-soft)";
+
+      var tdQty = document.createElement("td"); tdQty.className="num qty-cell";
+      var qtyIn = document.createElement("input");
+      qtyIn.type="number"; qtyIn.min="0"; qtyIn.step="0.1"; qtyIn.value = line.qty;
+      qtyIn.addEventListener("input", function(){ line.qty = parseFloat(qtyIn.value)||0; renderSmeta(); });
+      tdQty.appendChild(qtyIn);
+
+      var tdUnit = document.createElement("td"); tdUnit.textContent = line.unit;
+
+      var tdCost = document.createElement("td"); tdCost.className="num master-col cost-cell";
+      var costIn = document.createElement("input");
+      costIn.type="number"; costIn.min="0"; costIn.step="1"; costIn.value = line.cost;
+      costIn.addEventListener("input", function(){ line.cost = parseFloat(costIn.value)||0; renderSmeta(); });
+      tdCost.appendChild(costIn);
+
+      var tdClientUnit = document.createElement("td"); tdClientUnit.className="num"; tdClientUnit.textContent = fmt(unitClient);
+      var tdMasterSum = document.createElement("td"); tdMasterSum.className="num master-col"; tdMasterSum.textContent = fmt(masterSum);
+      var tdClientSum = document.createElement("td"); tdClientSum.className="num"; tdClientSum.textContent = fmt(clientSum);
+
+      var tdActions = document.createElement("td"); tdActions.className="no-print actions";
+      var del = document.createElement("button"); del.className="btn danger small"; del.textContent="✕";
+      del.addEventListener("click", function(){
+        state.smeta = state.smeta.filter(function(l){return l.id!==line.id;});
+        renderSmeta();
+      });
+      tdActions.appendChild(del);
+
+      tr.appendChild(tdCat); tr.appendChild(tdName); tr.appendChild(tdRoom);
+      tr.appendChild(tdQty); tr.appendChild(tdUnit);
+      tr.appendChild(tdCost); tr.appendChild(tdClientUnit); tr.appendChild(tdMasterSum); tr.appendChild(tdClientSum);
+      tr.appendChild(tdActions);
+      body.appendChild(tr);
+    });
+
+    document.getElementById("masterSubtotalCell").textContent = fmt(masterSubtotal);
+    document.getElementById("totalCell").textContent = fmt(clientSubtotal) + " ₽";
+  }
+
+  document.getElementById("markupPct").addEventListener("input", function(e){
+    state.markup = parseFloat(e.target.value)||0;
+    renderSmeta();
+  });
+
+  /* ---------- export (client-facing only) ---------- */
+  document.getElementById("printBtn").addEventListener("click", function(){ window.print(); });
+
+  document.getElementById("copyTextBtn").addEventListener("click", function(){
+    var lines = [];
+    lines.push("Предварительная смета — отделка квартиры");
+    lines.push("Заказчик: " + (state.client.name || "—"));
+    lines.push("Объект: " + (state.client.address || "—"));
+    lines.push("");
+    state.smeta.forEach(function(l){
+      var unitClient = clientUnitPrice(l.cost||0);
+      lines.push([l.cat, l.name, l.roomName||"—", l.qty+" "+l.unit, fmt(unitClient)+" ₽", fmt(unitClient*l.qty)+" ₽"].join("  |  "));
+    });
+    var clientSubtotal = state.smeta.reduce(function(a,l){return a + clientUnitPrice(l.cost||0)*l.qty;},0);
+    lines.push("");
+    lines.push("Итого к оплате: " + fmt(clientSubtotal) + " ₽");
+    var text = lines.join("\n");
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ toast("Скопировано в буфер обмена"); })
+        .catch(function(){ toast("Не удалось скопировать — выделите текст вручную"); });
+    } else { toast("Буфер обмена недоступен в этом окне"); }
+  });
+
+  /* ---------- save / load projects ---------- */
+  function collectState(){
+    return {
+      client: state.client, markup: state.markup, rooms: state.rooms, prices: state.prices,
+      smeta: state.smeta, savedAt: new Date().toISOString()
+    };
+  }
+  function refreshClientFromInputs(){
+    state.client.name = document.getElementById("clientName").value;
+    state.client.address = document.getElementById("clientAddress").value;
+    state.client.phone = document.getElementById("clientPhone").value;
+    state.client.visitDate = document.getElementById("visitDate").value;
+    state.client.hasDesign = document.getElementById("hasDesignProject").value;
+  }
+  ["clientName","clientAddress","clientPhone","visitDate","hasDesignProject"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", refreshClientFromInputs);
+    document.getElementById(id).addEventListener("change", refreshClientFromInputs);
+  });
+
+  function renderSavedList(){
+    var store = readStore();
+    var sel = document.getElementById("savedProjects");
+    var current = sel.value;
+    sel.innerHTML = '<option value="">— сохранённые объекты —</option>';
+    Object.keys(store).forEach(function(key){
+      var o = document.createElement("option"); o.value = key; o.textContent = key;
+      sel.appendChild(o);
+    });
+    if(store[current]) sel.value = current;
+  }
+
+  document.getElementById("saveProjectBtn").addEventListener("click", function(){
+    refreshClientFromInputs();
+    var key = (state.client.name || "Без имени") + " — " + (state.client.address || "адрес не указан");
+    var store = readStore();
+    store[key] = collectState();
+    if(writeStore(store)){ toast("Объект сохранён в этом браузере"); renderSavedList(); }
+    else { toast("Не удалось сохранить — возможно, отключено хранилище браузера"); }
+  });
+
+  document.getElementById("loadProjectBtn").addEventListener("click", function(){
+    var key = document.getElementById("savedProjects").value;
+    if(!key) return;
+    var store = readStore();
+    var data = store[key];
+    if(!data) return;
+    state.client = data.client || state.client;
+    state.markup = (typeof data.markup === "number") ? data.markup : 30;
+    state.rooms = (data.rooms || []).map(function(r){ return Object.assign(blankRoom(), r); });
+    state.prices = data.prices && data.prices.length ? data.prices : JSON.parse(JSON.stringify(DEFAULT_PRICES));
+    state.smeta = data.smeta || [];
+    applyClientToInputs();
+    document.getElementById("markupPct").value = state.markup;
+    renderRooms(); renderPriceTable(); renderSmeta();
+    toast("Объект загружен: " + key);
+  });
+
+  document.getElementById("deleteProjectBtn").addEventListener("click", function(){
+    var key = document.getElementById("savedProjects").value;
+    if(!key) return;
+    var store = readStore();
+    delete store[key];
+    writeStore(store);
+    renderSavedList();
+    toast("Объект удалён");
+  });
+
+  function applyClientToInputs(){
+    document.getElementById("clientName").value = state.client.name || "";
+    document.getElementById("clientAddress").value = state.client.address || "";
+    document.getElementById("clientPhone").value = state.client.phone || "";
+    document.getElementById("visitDate").value = state.client.visitDate || "";
+    document.getElementById("hasDesignProject").value = state.client.hasDesign || "no";
+  }
+
+  /* ---------- tabs ---------- */
+  document.querySelectorAll("nav.tabs button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll("nav.tabs button").forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      document.querySelectorAll(".tab-panel").forEach(function(p){ p.style.display = "none"; });
+      document.getElementById("tab-" + btn.dataset.tab).style.display = "block";
+    });
+  });
+
+  /* ---------- theme ---------- */
+  var themeBtn = document.getElementById("themeToggle");
+  function setTheme(mode){
+    if(mode === "dark"){ document.documentElement.setAttribute("data-theme","dark"); themeBtn.textContent="светлая тема"; }
+    else { document.documentElement.setAttribute("data-theme","light"); themeBtn.textContent="тёмная тема"; }
+    try{ localStorage.setItem("pragma_smeta_theme", mode); }catch(e){}
+  }
+  themeBtn.addEventListener("click", function(){
+    var cur = document.documentElement.getAttribute("data-theme");
+    setTheme(cur === "dark" ? "light" : "dark");
+  });
+  try{ var savedTheme = localStorage.getItem("pragma_smeta_theme"); if(savedTheme) setTheme(savedTheme); }catch(e){}
+
+  /* ---------- init ---------- */
+  state.client.name = "Сосновский Владимир Вячеславович";
+  applyClientToInputs();
+  document.getElementById("markupPct").value = state.markup;
+  var r1 = blankRoom();
+  r1.name = "Кухня"; r1.floorArea = 9; r1.wallArea = 24; r1.ceilingArea = 9; r1.perimeter = 12; r1.slopesLength = 3;
+  addRoom(r1);
+  renderPriceTable();
+  renderSmeta();
+  renderSavedList();
+
+})();
+</script>
+</body>
+</html>
