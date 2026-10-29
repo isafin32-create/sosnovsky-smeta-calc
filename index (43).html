@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Калькулятор сметы — отделка квартир</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f2ec; --paper-line:#dcd6c6; --ink:#22271f; --ink-soft:#5b6156;
+    --line:#c9c2ac; --accent:#8a5a2b; --accent-soft:#f0e6d6; --panel:#ffffff; --panel-line:#e4dfd0;
+    --danger:#a3402f; --ok:#4c6b4f; --radius:2px;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans:'IBM Plex Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --slab:'Zilla Slab', Georgia, 'Times New Roman', serif;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1b1c18; --paper-line:#2c2d26; --ink:#eceae2; --ink-soft:#a9a89c; --line:#3a3a30;
+      --panel:#232420; --panel-line:#33342c; --accent:#c98b4a; --accent-soft:#332a1c;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1b1c18; --paper-line:#2c2d26; --ink:#eceae2; --ink-soft:#a9a89c; --line:#3a3a30;
+    --panel:#232420; --panel-line:#33342c; --accent:#c98b4a; --accent-soft:#332a1c;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 38px, var(--paper-line) 38px 39px),
+      repeating-linear-gradient(90deg, transparent 0 38px, var(--paper-line) 38px 39px);
+    background-size:38px 38px; min-height:100%;
+  }
+  .wrap{ max-width:1220px; margin:0 auto; padding:28px 20px 80px; }
+  header.top{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; border-bottom:2px solid var(--ink); padding-bottom:16px; margin-bottom:18px; flex-wrap:wrap; }
+  .brand{ font-family:var(--mono); font-size:12px; letter-spacing:.04em; color:var(--ink-soft); }
+  h1{ font-family:var(--slab); font-weight:700; font-size:clamp(22px,3.2vw,32px); margin:2px 0 0; letter-spacing:-0.01em; }
+  .sub{ color:var(--ink-soft); font-size:14px; max-width:64ch; margin-top:4px; }
+  .theme-toggle{ font-family:var(--mono); font-size:11px; background:none; border:1px solid var(--line); color:var(--ink-soft); padding:6px 10px; border-radius:var(--radius); cursor:pointer; }
+
+  nav.tabs{ display:flex; gap:2px; margin-bottom:18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  nav.tabs button{ font-family:var(--sans); font-weight:600; font-size:14px; background:none; border:none; padding:10px 16px; cursor:pointer; color:var(--ink-soft); border-bottom:2px solid transparent; margin-bottom:-1px; }
+  nav.tabs button.active{ color:var(--ink); border-bottom-color:var(--accent); }
+  nav.tabs button:hover{ color:var(--ink); }
+
+  .panel{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius); padding:22px; margin-bottom:18px; }
+  .panel h2{ font-family:var(--slab); font-size:19px; margin:0 0 4px; font-weight:600; }
+  .panel .hint{ color:var(--ink-soft); font-size:13px; margin:0 0 16px; max-width:76ch; }
+
+  .grid{ display:grid; gap:14px; }
+  .grid.cols-2{ grid-template-columns:1fr 1fr; }
+  .grid.cols-3{ grid-template-columns:1fr 1fr 1fr; }
+  .grid.cols-5{ grid-template-columns:repeat(5,1fr); }
+  @media (max-width:760px){ .grid.cols-5{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:640px){ .grid.cols-2,.grid.cols-3{ grid-template-columns:1fr; } }
+
+  label.field{ display:flex; flex-direction:column; gap:5px; font-size:13px; color:var(--ink-soft); }
+  label.field span{ font-weight:600; color:var(--ink); }
+  input,select,textarea{ font-family:var(--sans); font-size:14px; color:var(--ink); background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:8px 10px; width:100%; }
+  input:focus,select:focus,textarea:focus,button:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+  input[type="checkbox"]{ width:16px; height:16px; }
+  .check-row{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); }
+
+  button.btn{ font-family:var(--sans); font-weight:600; font-size:13px; border-radius:var(--radius); border:1px solid var(--ink); background:var(--ink); color:var(--paper); padding:9px 15px; cursor:pointer; }
+  button.btn:hover{ opacity:.88; }
+  button.btn.ghost{ background:none; color:var(--ink); border-color:var(--line); }
+  button.btn.danger{ background:none; color:var(--danger); border-color:var(--danger); }
+  button.btn.small{ padding:5px 10px; font-size:12px; }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+
+  .room-card{ border:1px solid var(--panel-line); border-radius:var(--radius); padding:16px; margin-bottom:14px; background:var(--paper); }
+  .room-card .room-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+  .room-card .room-head input{ font-weight:600; font-size:15px; max-width:280px; }
+  .section-label{ font-family:var(--mono); font-size:11px; letter-spacing:.04em; color:var(--ink-soft); margin:16px 0 8px; padding-top:12px; border-top:1px dashed var(--line); }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ text-align:left; padding:7px 9px; border-bottom:1px solid var(--panel-line); vertical-align:middle; }
+  th{ font-family:var(--mono); font-size:10.5px; letter-spacing:.03em; color:var(--ink-soft); font-weight:600; }
+  td.num, th.num{ text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  tr.total-row td{ border-top:2px solid var(--ink); border-bottom:none; font-weight:700; font-family:var(--mono); font-size:15px; }
+  tr.subtotal-row td{ font-family:var(--mono); color:var(--ink-soft); }
+  .cat-badge{ font-family:var(--mono); font-size:10px; color:var(--ink-soft); border:1px solid var(--line); border-radius:20px; padding:2px 7px; white-space:nowrap; }
+  .table-scroll{ overflow-x:auto; }
+  td input, td select{ padding:5px 7px; font-size:13px; }
+  td.qty-cell input, td.cost-cell input{ width:72px; }
+  td.actions{ text-align:right; white-space:nowrap; }
+  th.master-col, td.master-col{ background:var(--accent-soft); }
+
+  .empty{ color:var(--ink-soft); font-size:13px; padding:14px 0; text-align:center; border:1px dashed var(--line); border-radius:var(--radius); }
+
+  .saved-bar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+  .saved-bar select{ max-width:260px; }
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:var(--radius); font-size:13px; opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; z-index:50; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .legend{ display:flex; gap:16px; font-size:12px; color:var(--ink-soft); margin-top:10px; flex-wrap:wrap; }
+  .legend .sw{ display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+
+  .picker-toggle{ display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line); }
+  .picker-toggle span.lbl{ font-weight:600; font-size:13.5px; }
+  .picker-toggle span.arrow{ font-family:var(--mono); color:var(--ink-soft); font-size:12px; }
+  .picker{ margin-top:12px; border:1px solid var(--panel-line); border-radius:var(--radius); padding:14px; background:var(--panel); }
+  .picker.collapsed{ display:none; }
+  .picker-controls{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .picker-controls input[type="text"]{ flex:1; min-width:180px; }
+  .picker-controls select{ max-width:220px; }
+  .picker-results{ max-height:360px; overflow-y:auto; border:1px solid var(--panel-line); border-radius:var(--radius); }
+  .picker-row{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-bottom:1px solid var(--panel-line); flex-wrap:wrap; }
+  .picker-row:last-child{ border-bottom:none; }
+  .picker-row .pr-name{ flex:1; min-width:220px; font-size:13px; }
+  .picker-row .pr-name .pr-cat{ display:block; font-family:var(--mono); font-size:10px; color:var(--ink-soft); margin-top:2px; }
+  .picker-row .pr-price{ font-family:var(--mono); font-size:12.5px; color:var(--ink-soft); white-space:nowrap; }
+  .picker-row .pr-qty{ width:68px; }
+  .picker-row .pr-quick{ display:flex; gap:4px; flex-wrap:wrap; }
+  .picker-row .pr-quick button{ font-size:10.5px; padding:3px 6px; }
+  .picker-hint{ color:var(--ink-soft); font-size:12.5px; padding:10px; }
+
+  @media print{
+    body{ background:#fff; }
+    nav.tabs, .no-print, .theme-toggle, .saved-bar, .btn-row, .checklist-panel, .master-col, .legend, .picker-toggle, .picker{ display:none !important; }
+    .panel{ border:none; padding:0; margin-bottom:20px; break-inside:avoid; }
+    .wrap{ max-width:none; padding:0; }
+    header.top{ border-bottom:2px solid #000; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand">PRAGMA · МОДУЛЬ 1 ИЗ ТЗ</div>
+      <h1>Калькулятор предварительной сметы</h1>
+      <div class="sub">Прайс-лист СПб 2026 (305 позиций, 15 разделов) — поиск и добавление работ по помещениям, смета с ценой мастера и ценой для клиента.</div>
+    </div>
+    <button class="theme-toggle no-print" id="themeToggle">тёмная тема</button>
+  </header>
+
+  <nav class="tabs no-print">
+    <button data-tab="object" class="active">Объект и помещения</button>
+    <button data-tab="smeta">Смета</button>
+    <button data-tab="prices">Прайс-лист</button>
+  </nav>
+
+  <!-- ================= OBJECT TAB ================= -->
+  <section id="tab-object" class="tab-panel checklist-panel">
+
+    <div class="panel no-print saved-bar">
+      <select id="savedProjects"><option value="">— сохранённые объекты —</option></select>
+      <button class="btn ghost small" id="loadProjectBtn">Загрузить</button>
+      <button class="btn ghost small" id="deleteProjectBtn">Удалить</button>
+      <span style="flex:1"></span>
+      <button class="btn small" id="saveProjectBtn">Сохранить объект</button>
+    </div>
+
+    <div class="panel">
+      <h2>Данные объекта</h2>
+      <div class="grid cols-3">
+        <label class="field"><span>Заказчик</span><input id="clientName" placeholder="Фамилия Имя Отчество"></label>
+        <label class="field"><span>Адрес объекта</span><input id="clientAddress" placeholder="г. Казань, ул. …"></label>
+        <label class="field"><span>Телефон заказчика</span><input id="clientPhone" placeholder="+7 ___ ___-__-__"></label>
+      </div>
+      <div class="grid cols-3" style="margin-top:14px;">
+        <label class="field"><span>Дата обращения</span><input id="visitDate" type="date"></label>
+        <label class="field"><span>Доп. наценка сверх прайса, %</span><input id="markupPct" type="number" min="0" step="1" value="0"></label>
+        <label class="field" style="justify-content:flex-end;">
+          <span style="visibility:hidden;">.</span>
+          <span class="check-row" style="padding:8px 0;"><input id="useComplex" type="checkbox"><span>Сложный объект / дизайн-проект (цена из колонки «Сложный объект»)</span></span>
+        </label>
+      </div>
+      <p class="hint" style="margin-top:10px;">Прайс указывает цену работ «от», без материалов. Для малого объёма, высоты более 3 м, удалённости и т.п. прайс-лист предусматривает свои коэффициенты — применяйте их вручную через наценку.</p>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <div><h2>Помещения</h2><p class="hint">Замеры по помещению — и сразу под ним ищите и добавляйте нужные работы из прайса.</p></div>
+        <button class="btn no-print" id="addRoomBtn">+ Добавить помещение</button>
+      </div>
+      <div id="roomsList"></div>
+      <div id="roomsEmpty" class="empty">Помещений пока нет — добавьте первое.</div>
+    </div>
+
+    <div class="panel">
+      <h2>Общие работы (не привязаны к помещению)</h2>
+      <p class="hint">Выезд и замер, мобилизация объекта, вывоз мусора и т.п.</p>
+      <div id="generalLines"></div>
+      <div id="generalPickerMount"></div>
+    </div>
+  </section>
+
+  <!-- ================= SMETA TAB ================= -->
+  <section id="tab-smeta" class="tab-panel" style="display:none;">
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h2>Предварительная смета</h2>
+          <p class="hint">Жёлтым — себестоимость (цена мастера): видна только вам, в печать и в текстовую выгрузку для клиента не попадает.</p>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table id="smetaTable">
+          <thead>
+            <tr>
+              <th>Категория</th><th>Наименование</th><th>Помещение</th>
+              <th class="num">Кол-во</th><th>Ед.</th>
+              <th class="num master-col">Цена мастера, ₽</th>
+              <th class="num">Цена клиенту, ₽</th>
+              <th class="num master-col">Сумма мастеру, ₽</th>
+              <th class="num">Сумма клиенту, ₽</th>
+              <th class="no-print"></th>
+            </tr>
+          </thead>
+          <tbody id="smetaBody"></tbody>
+          <tfoot>
+            <tr class="subtotal-row">
+              <td colspan="7">Итого себестоимость (мастеру)</td>
+              <td class="num master-col" id="masterSubtotalCell">0</td><td class="no-print"></td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="7">Итого к оплате заказчиком</td>
+              <td class="num" id="totalCell">0 ₽</td><td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div id="smetaEmpty" class="empty">Смета пуста — перейдите в «Объект и помещения» и добавьте работы по помещениям или в общий список.</div>
+
+      <div class="legend no-print">
+        <span><span class="sw" style="background:var(--accent-soft); border:1px solid var(--line);"></span>видно только вам (не печатается и не копируется в текст для клиента)</span>
+      </div>
+
+      <div class="btn-row no-print">
+        <button class="btn" id="printBtn">Печать / сохранить как PDF (для клиента)</button>
+        <button class="btn ghost" id="copyTextBtn">Скопировать как текст (для клиента)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PRICE LIST TAB ================= -->
+  <section id="tab-prices" class="tab-panel" style="display:none;">
+    <div class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h2>Прайс-лист (справочник расценок)</h2>
+          <p class="hint">Прайс на ремонтно-отделочные работы, Санкт-Петербург 2026 — 305 позиций, 15 разделов. «Цена от» — себестоимость (цена мастера); «Сложный объект» — цена при повышенной сложности (коэфф. ≈1.2). Обе колонки редактируемые.</p>
+        </div>
+        <button class="btn ghost no-print small" id="addPriceBtn">+ Позиция</button>
+      </div>
+      <div class="picker-controls" style="margin-bottom:14px;">
+        <input type="text" id="priceSearch" placeholder="Поиск по названию…">
+        <select id="priceCatFilter"><option value="">Все разделы</option></select>
+      </div>
+      <div class="table-scroll">
+        <table id="priceTable">
+          <thead><tr><th>Категория</th><th>Наименование</th><th>Ед.</th><th class="num">Цена от, ₽</th><th class="num">Сложный объект, ₽</th><th class="no-print"></th></tr></thead>
+          <tbody id="priceBody"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="priceCountHint" style="margin-top:10px;"></p>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var CATEGORIES = ["Демонтажные работы","Подготовительные работы","Перегородки и ГКЛ","Штукатурные работы","Малярные работы","Полы","Плиточные работы","Электромонтажные работы","Инженерная сантехника","Отопление","Чистовая сантехника","Двери, окна, откосы","Потолки","Вентиляция и кондиционирование","Дополнительные и специальные работы"];
+  var UNITS = ["м²","п.м.","шт.","компл.","точка","выезд","день","рейс","створка","этаж/компл.","система","контур","заказ"];
+
+  var DEFAULT_PRICES = [
+{id:'i1',cat:'Демонтажные работы',name:'Демонтаж обоев',unit:'м²',cost:200,costComplex:250},
+{id:'i2',cat:'Демонтажные работы',name:'Демонтаж шпаклевки/краски со стен',unit:'м²',cost:350,costComplex:400},
+{id:'i3',cat:'Демонтажные работы',name:'Зачистка стен алмазной чашкой',unit:'м²',cost:500,costComplex:600},
+{id:'i4',cat:'Демонтажные работы',name:'Демонтаж штукатурки стен',unit:'м²',cost:550,costComplex:650},
+{id:'i5',cat:'Демонтажные работы',name:'Демонтаж штукатурки потолка',unit:'м²',cost:800,costComplex:950},
+{id:'i6',cat:'Демонтажные работы',name:'Демонтаж плитки со стен',unit:'м²',cost:650,costComplex:800},
+{id:'i7',cat:'Демонтажные работы',name:'Демонтаж плитки с пола',unit:'м²',cost:750,costComplex:900},
+{id:'i8',cat:'Демонтажные работы',name:'Демонтаж керамогранита крупного формата',unit:'м²',cost:1000,costComplex:1200},
+{id:'i9',cat:'Демонтажные работы',name:'Демонтаж ламината',unit:'м²',cost:450,costComplex:550},
+{id:'i10',cat:'Демонтажные работы',name:'Демонтаж линолеума',unit:'м²',cost:350,costComplex:400},
+{id:'i11',cat:'Демонтажные работы',name:'Демонтаж паркетной доски',unit:'м²',cost:650,costComplex:800},
+{id:'i12',cat:'Демонтажные работы',name:'Демонтаж паркета на клею',unit:'м²',cost:1100,costComplex:1300},
+{id:'i13',cat:'Демонтажные работы',name:'Демонтаж фанеры с пола',unit:'м²',cost:700,costComplex:850},
+{id:'i14',cat:'Демонтажные работы',name:'Демонтаж стяжки до 50 мм',unit:'м²',cost:750,costComplex:900},
+{id:'i15',cat:'Демонтажные работы',name:'Демонтаж стяжки 50–100 мм',unit:'м²',cost:1100,costComplex:1300},
+{id:'i16',cat:'Демонтажные работы',name:'Демонтаж наливного пола/ровнителя',unit:'м²',cost:450,costComplex:550},
+{id:'i17',cat:'Демонтажные работы',name:'Зачистка плиты перекрытия алмазной чашкой',unit:'м²',cost:500,costComplex:600},
+{id:'i18',cat:'Демонтажные работы',name:'Демонтаж перегородки газобетон',unit:'м²',cost:800,costComplex:950},
+{id:'i19',cat:'Демонтажные работы',name:'Демонтаж кирпичной перегородки 1/2 кирпича',unit:'м²',cost:1200,costComplex:1450},
+{id:'i20',cat:'Демонтажные работы',name:'Демонтаж перегородки ГКЛ',unit:'м²',cost:750,costComplex:900},
+{id:'i21',cat:'Демонтажные работы',name:'Демонтаж каркасного потолка ГКЛ',unit:'м²',cost:900,costComplex:1100},
+{id:'i22',cat:'Демонтажные работы',name:'Демонтаж натяжного потолка',unit:'м²',cost:250,costComplex:300},
+{id:'i23',cat:'Демонтажные работы',name:'Демонтаж межкомнатной двери с коробкой',unit:'шт.',cost:1000,costComplex:1200},
+{id:'i24',cat:'Демонтажные работы',name:'Демонтаж входной двери',unit:'шт.',cost:3000,costComplex:3600},
+{id:'i25',cat:'Демонтажные работы',name:'Демонтаж оконного блока',unit:'шт.',cost:5000,costComplex:6000},
+{id:'i26',cat:'Демонтажные работы',name:'Демонтаж подоконного блока',unit:'шт.',cost:8000,costComplex:9600},
+{id:'i27',cat:'Демонтажные работы',name:'Демонтаж подоконника',unit:'п.м.',cost:1000,costComplex:1200},
+{id:'i28',cat:'Демонтажные работы',name:'Демонтаж оконных/дверных откосов',unit:'п.м.',cost:900,costComplex:1100},
+{id:'i29',cat:'Демонтажные работы',name:'Демонтаж ванны акриловой',unit:'шт.',cost:3000,costComplex:3600},
+{id:'i30',cat:'Демонтажные работы',name:'Демонтаж ванны чугунной',unit:'шт.',cost:6000,costComplex:7200},
+{id:'i31',cat:'Демонтажные работы',name:'Демонтаж унитаза',unit:'шт.',cost:2000,costComplex:2400},
+{id:'i32',cat:'Демонтажные работы',name:'Демонтаж раковины',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i33',cat:'Демонтажные работы',name:'Демонтаж радиатора',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i34',cat:'Демонтажные работы',name:'Демонтаж сантехнических труб/узла',unit:'компл.',cost:6000,costComplex:7200},
+{id:'i35',cat:'Демонтажные работы',name:'Демонтаж электроприборов, розеток, плинтусов',unit:'м²',cost:200,costComplex:250},
+{id:'i36',cat:'Подготовительные работы',name:'Выезд, замер и консультация по Санкт-Петербургу',unit:'выезд',cost:5000,costComplex:6000},
+{id:'i37',cat:'Подготовительные работы',name:'Мобилизация объекта',unit:'компл.',cost:30000,costComplex:36000},
+{id:'i38',cat:'Подготовительные работы',name:'Укрытие пола картоном/пленкой',unit:'м²',cost:450,costComplex:550},
+{id:'i39',cat:'Подготовительные работы',name:'Укрытие дверей/окон',unit:'шт.',cost:1000,costComplex:1200},
+{id:'i40',cat:'Подготовительные работы',name:'Обеспыливание основания',unit:'м²',cost:100,costComplex:100},
+{id:'i41',cat:'Подготовительные работы',name:'Грунтование основания 1 слой',unit:'м²',cost:120,costComplex:150},
+{id:'i42',cat:'Подготовительные работы',name:'Грунтование глубокопроникающим составом',unit:'м²',cost:180,costComplex:200},
+{id:'i43',cat:'Подготовительные работы',name:'Бетоноконтакт',unit:'м²',cost:350,costComplex:400},
+{id:'i44',cat:'Подготовительные работы',name:'Адгезионный слой под цементную штукатурку',unit:'м²',cost:500,costComplex:600},
+{id:'i45',cat:'Подготовительные работы',name:'Монтаж армирующей сетки на стены',unit:'м²',cost:150,costComplex:200},
+{id:'i46',cat:'Подготовительные работы',name:'Монтаж армирующей сетки на простенки',unit:'п.м.',cost:150,costComplex:200},
+{id:'i47',cat:'Подготовительные работы',name:'Монтаж демпферной ленты',unit:'п.м.',cost:200,costComplex:250},
+{id:'i48',cat:'Подготовительные работы',name:'Запенивание примыканий',unit:'п.м.',cost:500,costComplex:600},
+{id:'i49',cat:'Подготовительные работы',name:'Шлифовка основания алмазной чашкой',unit:'м²',cost:800,costComplex:950},
+{id:'i50',cat:'Подготовительные работы',name:'Локальный ремонт трещин',unit:'п.м.',cost:600,costComplex:700},
+{id:'i51',cat:'Подготовительные работы',name:'Расшивка трещин/стыков',unit:'п.м.',cost:500,costComplex:600},
+{id:'i52',cat:'Перегородки и ГКЛ',name:'Кладка перегородок газобетон до 100 мм',unit:'м²',cost:2200,costComplex:2650},
+{id:'i53',cat:'Перегородки и ГКЛ',name:'Кладка перегородок газобетон 150–200 мм',unit:'м²',cost:2600,costComplex:3100},
+{id:'i54',cat:'Перегородки и ГКЛ',name:'Армирование кладки',unit:'м²',cost:350,costComplex:400},
+{id:'i55',cat:'Перегородки и ГКЛ',name:'Устройство дверного проема в газобетоне',unit:'шт.',cost:4500,costComplex:5400},
+{id:'i56',cat:'Перегородки и ГКЛ',name:'Монтаж перегородки ГКЛ 1 слой с каждой стороны',unit:'м²',cost:2200,costComplex:2650},
+{id:'i57',cat:'Перегородки и ГКЛ',name:'Монтаж перегородки ГКЛ 2 слоя с каждой стороны',unit:'м²',cost:3200,costComplex:3850},
+{id:'i58',cat:'Перегородки и ГКЛ',name:'Монтаж влагостойкого ГКЛ',unit:'м²',cost:2500,costComplex:3000},
+{id:'i59',cat:'Перегородки и ГКЛ',name:'Монтаж шумоизоляции минватой в перегородку',unit:'м²',cost:1200,costComplex:1450},
+{id:'i60',cat:'Перегородки и ГКЛ',name:'Монтаж обшивки стены ГКЛ по каркасу',unit:'м²',cost:1800,costComplex:2150},
+{id:'i61',cat:'Перегородки и ГКЛ',name:'Монтаж ГКЛ на клей',unit:'м²',cost:1200,costComplex:1450},
+{id:'i62',cat:'Перегородки и ГКЛ',name:'Монтаж короба ГКЛ',unit:'п.м.',cost:2500,costComplex:3000},
+{id:'i63',cat:'Перегородки и ГКЛ',name:'Монтаж потолка ГКЛ 1 уровень',unit:'м²',cost:2200,costComplex:2650},
+{id:'i64',cat:'Перегородки и ГКЛ',name:'Монтаж потолка ГКЛ сложной формы',unit:'м²',cost:3200,costComplex:3850},
+{id:'i65',cat:'Перегородки и ГКЛ',name:'Монтаж ниши под гардину',unit:'п.м.',cost:2500,costComplex:3000},
+{id:'i66',cat:'Перегородки и ГКЛ',name:'Усиление каркаса закладными',unit:'п.м.',cost:1000,costComplex:1200},
+{id:'i67',cat:'Перегородки и ГКЛ',name:'Заделка стыков ГКЛ с лентой',unit:'п.м.',cost:450,costComplex:550},
+{id:'i68',cat:'Штукатурные работы',name:'Штукатурка стен гипсовая по маякам',unit:'м²',cost:900,costComplex:1100},
+{id:'i69',cat:'Штукатурные работы',name:'Штукатурка стен цементная по маякам',unit:'м²',cost:1200,costComplex:1450},
+{id:'i70',cat:'Штукатурные работы',name:'Штукатурка потолка гипсовая',unit:'м²',cost:1400,costComplex:1700},
+{id:'i71',cat:'Штукатурные работы',name:'Штукатурка потолка цементная',unit:'м²',cost:1700,costComplex:2050},
+{id:'i72',cat:'Штукатурные работы',name:'Штукатурка колонн/простенков до 600 мм гипсовая',unit:'п.м.',cost:1100,costComplex:1300},
+{id:'i73',cat:'Штукатурные работы',name:'Штукатурка колонн/простенков до 600 мм цементная',unit:'п.м.',cost:1400,costComplex:1700},
+{id:'i74',cat:'Штукатурные работы',name:'Штукатурка откосов',unit:'п.м.',cost:1500,costComplex:1800},
+{id:'i75',cat:'Штукатурные работы',name:'Протяжка стен под правило',unit:'м²',cost:1200,costComplex:1450},
+{id:'i76',cat:'Штукатурные работы',name:'Протяжка потолка под правило',unit:'м²',cost:1500,costComplex:1800},
+{id:'i77',cat:'Штукатурные работы',name:'Выведение внутренних углов 90°',unit:'п.м.',cost:700,costComplex:850},
+{id:'i78',cat:'Штукатурные работы',name:'Выведение наружных углов',unit:'п.м.',cost:800,costComplex:950},
+{id:'i79',cat:'Штукатурные работы',name:'Геометрия помещения / угол 90°',unit:'шт.',cost:1600,costComplex:1900},
+{id:'i80',cat:'Штукатурные работы',name:'Доплата за слой более 30 мм',unit:'м²',cost:300,costComplex:350},
+{id:'i81',cat:'Штукатурные работы',name:'Доплата за высоту более 3 м',unit:'м²',cost:250,costComplex:300},
+{id:'i82',cat:'Штукатурные работы',name:'Штукатурка за трубами',unit:'п.м.',cost:900,costComplex:1100},
+{id:'i83',cat:'Штукатурные работы',name:'Монтаж штукатурного уголка',unit:'п.м.',cost:450,costComplex:550},
+{id:'i84',cat:'Малярные работы',name:'Шпаклевка стен 1 слой',unit:'м²',cost:400,costComplex:500},
+{id:'i85',cat:'Малярные работы',name:'Шпаклевка стен 2 слоя',unit:'м²',cost:750,costComplex:900},
+{id:'i86',cat:'Малярные работы',name:'Шпаклевка потолка 1 слой',unit:'м²',cost:550,costComplex:650},
+{id:'i87',cat:'Малярные работы',name:'Шпаклевка потолка 2 слоя',unit:'м²',cost:1000,costComplex:1200},
+{id:'i88',cat:'Малярные работы',name:'Шлифовка стен',unit:'м²',cost:350,costComplex:400},
+{id:'i89',cat:'Малярные работы',name:'Шлифовка потолка',unit:'м²',cost:450,costComplex:550},
+{id:'i90',cat:'Малярные работы',name:'Оклейка стеклохолстом стен',unit:'м²',cost:550,costComplex:650},
+{id:'i91',cat:'Малярные работы',name:'Оклейка стеклохолстом потолка',unit:'м²',cost:700,costComplex:850},
+{id:'i92',cat:'Малярные работы',name:'Подготовка стен под покраску, комплекс',unit:'м²',cost:1800,costComplex:2150},
+{id:'i93',cat:'Малярные работы',name:'Подготовка потолка под покраску, комплекс',unit:'м²',cost:2300,costComplex:2750},
+{id:'i94',cat:'Малярные работы',name:'Покраска стен 2 слоя',unit:'м²',cost:750,costComplex:900},
+{id:'i95',cat:'Малярные работы',name:'Покраска потолка 2 слоя',unit:'м²',cost:900,costComplex:1100},
+{id:'i96',cat:'Малярные работы',name:'Покраска откосов',unit:'п.м.',cost:700,costComplex:850},
+{id:'i97',cat:'Малярные работы',name:'Поклейка флизелиновых обоев',unit:'м²',cost:700,costComplex:850},
+{id:'i98',cat:'Малярные работы',name:'Поклейка бумажных обоев',unit:'м²',cost:850,costComplex:1000},
+{id:'i99',cat:'Малярные работы',name:'Поклейка текстильных/дорогих обоев',unit:'м²',cost:1500,costComplex:1800},
+{id:'i100',cat:'Малярные работы',name:'Поклейка фотообоев',unit:'м²',cost:1800,costComplex:2150},
+{id:'i101',cat:'Малярные работы',name:'Реставрация потолочной галтели',unit:'п.м.',cost:450,costComplex:550},
+{id:'i102',cat:'Малярные работы',name:'Монтаж потолочной галтели',unit:'п.м.',cost:800,costComplex:950},
+{id:'i103',cat:'Малярные работы',name:'Покраска галтели',unit:'п.м.',cost:300,costComplex:350},
+{id:'i104',cat:'Малярные работы',name:'Монтаж малярного уголка/металлизированной ленты',unit:'п.м.',cost:500,costComplex:600},
+{id:'i105',cat:'Полы',name:'Грунтование пола',unit:'м²',cost:150,costComplex:200},
+{id:'i106',cat:'Полы',name:'Подготовка основания под ровнитель',unit:'м²',cost:450,costComplex:550},
+{id:'i107',cat:'Полы',name:'Наливной пол до 10 мм',unit:'м²',cost:1300,costComplex:1550},
+{id:'i108',cat:'Полы',name:'Наливной пол 10–30 мм',unit:'м²',cost:1700,costComplex:2050},
+{id:'i109',cat:'Полы',name:'Протяжка пола ровнителем по маякам',unit:'м²',cost:2200,costComplex:2650},
+{id:'i110',cat:'Полы',name:'Шлифовка стяжки',unit:'м²',cost:600,costComplex:700},
+{id:'i111',cat:'Полы',name:'Гидроизоляция пола 2 слоя',unit:'м²',cost:1000,costComplex:1200},
+{id:'i112',cat:'Полы',name:'Укладка подложки',unit:'м²',cost:200,costComplex:250},
+{id:'i113',cat:'Полы',name:'Укладка ламината прямая',unit:'м²',cost:950,costComplex:1150},
+{id:'i114',cat:'Полы',name:'Укладка ламината по диагонали',unit:'м²',cost:1200,costComplex:1450},
+{id:'i115',cat:'Полы',name:'Укладка кварцвинила замкового',unit:'м²',cost:1100,costComplex:1300},
+{id:'i116',cat:'Полы',name:'Укладка кварцвинила клеевого',unit:'м²',cost:1600,costComplex:1900},
+{id:'i117',cat:'Полы',name:'Укладка инженерной/паркетной доски на клей',unit:'м²',cost:2300,costComplex:2750},
+{id:'i118',cat:'Полы',name:'Укладка паркета елкой',unit:'м²',cost:3200,costComplex:3850},
+{id:'i119',cat:'Полы',name:'Укладка французской елки',unit:'м²',cost:4200,costComplex:5050},
+{id:'i120',cat:'Полы',name:'Монтаж пластикового плинтуса',unit:'п.м.',cost:400,costComplex:500},
+{id:'i121',cat:'Полы',name:'Монтаж МДФ плинтуса',unit:'п.м.',cost:700,costComplex:850},
+{id:'i122',cat:'Полы',name:'Монтаж алюминиевого плинтуса',unit:'п.м.',cost:900,costComplex:1100},
+{id:'i123',cat:'Полы',name:'Монтаж скрытого плинтуса',unit:'п.м.',cost:1600,costComplex:1900},
+{id:'i124',cat:'Полы',name:'Установка порожка',unit:'шт.',cost:1200,costComplex:1450},
+{id:'i125',cat:'Полы',name:'Пробковый пол клеевой',unit:'м²',cost:1800,costComplex:2150},
+{id:'i126',cat:'Плиточные работы',name:'Обеспыливание и грунтование под плитку',unit:'м²',cost:200,costComplex:250},
+{id:'i127',cat:'Плиточные работы',name:'Гидроизоляция 2 слоя',unit:'м²',cost:950,costComplex:1150},
+{id:'i128',cat:'Плиточные работы',name:'Монтаж гидроизоляционной ленты',unit:'п.м.',cost:300,costComplex:350},
+{id:'i129',cat:'Плиточные работы',name:'Монтаж трещиностойкой мембраны',unit:'м²',cost:800,costComplex:950},
+{id:'i130',cat:'Плиточные работы',name:'Укладка плитки до 300×300',unit:'м²',cost:4200,costComplex:5050},
+{id:'i131',cat:'Плиточные работы',name:'Укладка плитки 600×600',unit:'м²',cost:4200,costComplex:5050},
+{id:'i132',cat:'Плиточные работы',name:'Укладка керамогранита 600×1200',unit:'м²',cost:4800,costComplex:5750},
+{id:'i133',cat:'Плиточные работы',name:'Укладка 800×800',unit:'м²',cost:4600,costComplex:5500},
+{id:'i134',cat:'Плиточные работы',name:'Укладка 1200×1200',unit:'м²',cost:5500,costComplex:6600},
+{id:'i135',cat:'Плиточные работы',name:'Укладка крупного формата 1200×2400/2800',unit:'м²',cost:7500,costComplex:9000},
+{id:'i136',cat:'Плиточные работы',name:'Укладка 1500×3000',unit:'м²',cost:9000,costComplex:10800},
+{id:'i137',cat:'Плиточные работы',name:'Укладка 1600×3200',unit:'м²',cost:11000,costComplex:13200},
+{id:'i138',cat:'Плиточные работы',name:'Укладка мозаики',unit:'м²',cost:6500,costComplex:7800},
+{id:'i139',cat:'Плиточные работы',name:'Укладка стеклянной мозаики',unit:'м²',cost:7500,costComplex:9000},
+{id:'i140',cat:'Плиточные работы',name:'Укладка кабанчика/кирпичика',unit:'м²',cost:6000,costComplex:7200},
+{id:'i141',cat:'Плиточные работы',name:'Диагональная раскладка',unit:'м²',cost:800,costComplex:950},
+{id:'i142',cat:'Плиточные работы',name:'Раскрой керамогранита',unit:'п.м.',cost:900,costComplex:1100},
+{id:'i143',cat:'Плиточные работы',name:'Чистовой рез / заводская кромка',unit:'п.м.',cost:1300,costComplex:1550},
+{id:'i144',cat:'Плиточные работы',name:'Заусовка 45°, одна сторона',unit:'п.м.',cost:2000,costComplex:2400},
+{id:'i145',cat:'Плиточные работы',name:'Заусовка в сборе',unit:'п.м.',cost:4000,costComplex:4800},
+{id:'i146',cat:'Плиточные работы',name:'Формирование полукруглого эпоксидного угла',unit:'п.м.',cost:1500,costComplex:1800},
+{id:'i147',cat:'Плиточные работы',name:'Эпоксидная затирка стандартная',unit:'м²',cost:1500,costComplex:1800},
+{id:'i148',cat:'Плиточные работы',name:'Эпоксидная затирка мозаики',unit:'м²',cost:2500,costComplex:3000},
+{id:'i149',cat:'Плиточные работы',name:'Цементная затирка',unit:'м²',cost:700,costComplex:850},
+{id:'i150',cat:'Плиточные работы',name:'Силиконовый шов',unit:'п.м.',cost:450,costComplex:550},
+{id:'i151',cat:'Плиточные работы',name:'Отверстие до 90 мм',unit:'шт.',cost:1000,costComplex:1200},
+{id:'i152',cat:'Плиточные работы',name:'Отверстие свыше 90 мм',unit:'шт.',cost:1500,costComplex:1800},
+{id:'i153',cat:'Плиточные работы',name:'Вырез под кнопку инсталляции',unit:'шт.',cost:3000,costComplex:3600},
+{id:'i154',cat:'Плиточные работы',name:'Укладка узких мест до 600 мм',unit:'п.м.',cost:4500,costComplex:5400},
+{id:'i155',cat:'Плиточные работы',name:'Разуклонка душевого поддона',unit:'шт.',cost:22000,costComplex:26400},
+{id:'i156',cat:'Плиточные работы',name:'Изготовление поддона/подиума',unit:'шт.',cost:25000,costComplex:30000},
+{id:'i157',cat:'Плиточные работы',name:'Экран ванны из плитки/керамогранита',unit:'шт.',cost:15000,costComplex:18000},
+{id:'i158',cat:'Плиточные работы',name:'Магнитный люк облицованный плиткой',unit:'шт.',cost:8000,costComplex:9600},
+{id:'i159',cat:'Плиточные работы',name:'Полка из керамогранита',unit:'шт.',cost:9000,costComplex:10800},
+{id:'i160',cat:'Плиточные работы',name:'Откос из керамогранита',unit:'п.м.',cost:4000,costComplex:4800},
+{id:'i161',cat:'Плиточные работы',name:'Подоконник из керамогранита',unit:'шт.',cost:15000,costComplex:18000},
+{id:'i162',cat:'Электромонтажные работы',name:'Прокладка кабеля без гофры',unit:'п.м.',cost:220,costComplex:250},
+{id:'i163',cat:'Электромонтажные работы',name:'Прокладка кабеля в гофре',unit:'п.м.',cost:320,costComplex:400},
+{id:'i164',cat:'Электромонтажные работы',name:'Монтаж гофры',unit:'п.м.',cost:180,costComplex:200},
+{id:'i165',cat:'Электромонтажные работы',name:'Штробление газобетона',unit:'п.м.',cost:700,costComplex:850},
+{id:'i166',cat:'Электромонтажные работы',name:'Штробление кирпича/штукатурки',unit:'п.м.',cost:1200,costComplex:1450},
+{id:'i167',cat:'Электромонтажные работы',name:'Штробление бетона до 40 мм',unit:'п.м.',cost:2000,costComplex:2400},
+{id:'i168',cat:'Электромонтажные работы',name:'Монтаж подрозетника в ГКЛ',unit:'шт.',cost:500,costComplex:600},
+{id:'i169',cat:'Электромонтажные работы',name:'Монтаж подрозетника в кирпиче',unit:'шт.',cost:1000,costComplex:1200},
+{id:'i170',cat:'Электромонтажные работы',name:'Монтаж подрозетника в бетоне',unit:'шт.',cost:1400,costComplex:1700},
+{id:'i171',cat:'Электромонтажные работы',name:'Расключение подрозетника',unit:'шт.',cost:900,costComplex:1100},
+{id:'i172',cat:'Электромонтажные работы',name:'Установка розетки/выключателя',unit:'шт.',cost:650,costComplex:800},
+{id:'i173',cat:'Электромонтажные работы',name:'Монтаж распаечной коробки',unit:'шт.',cost:1200,costComplex:1450},
+{id:'i174',cat:'Электромонтажные работы',name:'Расключение распаечной коробки',unit:'шт.',cost:2500,costComplex:3000},
+{id:'i175',cat:'Электромонтажные работы',name:'Сверление проходного отверстия',unit:'шт.',cost:400,costComplex:500},
+{id:'i176',cat:'Электромонтажные работы',name:'Монтаж силового щита, ниша + сборка',unit:'шт.',cost:55000,costComplex:66000},
+{id:'i177',cat:'Электромонтажные работы',name:'Монтаж слаботочного щита, ниша + сборка',unit:'шт.',cost:40000,costComplex:48000},
+{id:'i178',cat:'Электромонтажные работы',name:'Монтаж автомата 1–2 модуля',unit:'шт.',cost:700,costComplex:850},
+{id:'i179',cat:'Электромонтажные работы',name:'Монтаж УЗО/дифавтомата',unit:'шт.',cost:1000,costComplex:1200},
+{id:'i180',cat:'Электромонтажные работы',name:'Монтаж реле напряжения',unit:'шт.',cost:1500,costComplex:1800},
+{id:'i181',cat:'Электромонтажные работы',name:'Монтаж люстры простой',unit:'шт.',cost:3000,costComplex:3600},
+{id:'i182',cat:'Электромонтажные работы',name:'Монтаж бра',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i183',cat:'Электромонтажные работы',name:'Монтаж точечного светильника',unit:'шт.',cost:700,costComplex:850},
+{id:'i184',cat:'Электромонтажные работы',name:'Монтаж светодиодной ленты',unit:'п.м.',cost:700,costComplex:850},
+{id:'i185',cat:'Электромонтажные работы',name:'Монтаж LED-профиля',unit:'п.м.',cost:900,costComplex:1100},
+{id:'i186',cat:'Электромонтажные работы',name:'Подключение теплого пола',unit:'компл.',cost:4000,costComplex:4800},
+{id:'i187',cat:'Электромонтажные работы',name:'Монтаж терморегулятора теплого пола',unit:'шт.',cost:2000,costComplex:2400},
+{id:'i188',cat:'Электромонтажные работы',name:'Прокладка слаботочного кабеля',unit:'п.м.',cost:250,costComplex:300},
+{id:'i189',cat:'Электромонтажные работы',name:'Монтаж интернет-розетки',unit:'шт.',cost:900,costComplex:1100},
+{id:'i190',cat:'Электромонтажные работы',name:'Монтаж TV-розетки',unit:'шт.',cost:900,costComplex:1100},
+{id:'i191',cat:'Электромонтажные работы',name:'Монтаж датчика протечки/движения',unit:'шт.',cost:1000,costComplex:1200},
+{id:'i192',cat:'Инженерная сантехника',name:'Монтаж водорозетки',unit:'шт.',cost:4000,costComplex:4800},
+{id:'i193',cat:'Инженерная сантехника',name:'Прокладка PEX-a водоснабжения',unit:'п.м.',cost:800,costComplex:950},
+{id:'i194',cat:'Инженерная сантехника',name:'Упаковка труб в гофру/изоляцию',unit:'п.м.',cost:550,costComplex:650},
+{id:'i195',cat:'Инженерная сантехника',name:'Монтаж канализационной точки',unit:'шт.',cost:3000,costComplex:3600},
+{id:'i196',cat:'Инженерная сантехника',name:'Прокладка канализации 50 мм',unit:'п.м.',cost:1500,costComplex:1800},
+{id:'i197',cat:'Инженерная сантехника',name:'Прокладка канализации 110 мм',unit:'п.м.',cost:2000,costComplex:2400},
+{id:'i198',cat:'Инженерная сантехника',name:'Штроба под трубы газобетон',unit:'п.м.',cost:1000,costComplex:1200},
+{id:'i199',cat:'Инженерная сантехника',name:'Штроба под трубы кирпич',unit:'п.м.',cost:1500,costComplex:1800},
+{id:'i200',cat:'Инженерная сантехника',name:'Штроба под трубы бетон',unit:'п.м.',cost:2200,costComplex:2650},
+{id:'i201',cat:'Инженерная сантехника',name:'Монтаж инсталляции',unit:'шт.',cost:13000,costComplex:15600},
+{id:'i202',cat:'Инженерная сантехника',name:'Монтаж скрытой части смесителя',unit:'шт.',cost:6500,costComplex:7800},
+{id:'i203',cat:'Инженерная сантехника',name:'Монтаж скрытой части гигиенического душа',unit:'шт.',cost:5000,costComplex:6000},
+{id:'i204',cat:'Инженерная сантехника',name:'Монтаж душевого трапа',unit:'шт.',cost:10000,costComplex:12000},
+{id:'i205',cat:'Инженерная сантехника',name:'Шумоизоляция канализационного стояка',unit:'шт.',cost:8000,costComplex:9600},
+{id:'i206',cat:'Инженерная сантехника',name:'Замена канализационного стояка',unit:'шт.',cost:14000,costComplex:16800},
+{id:'i207',cat:'Инженерная сантехника',name:'Опуск канализационной крестовины',unit:'шт.',cost:20000,costComplex:24000},
+{id:'i208',cat:'Инженерная сантехника',name:'Замена стояка водоснабжения',unit:'шт.',cost:9000,costComplex:10800},
+{id:'i209',cat:'Инженерная сантехника',name:'Перепайка стояка водоснабжения',unit:'шт.',cost:8000,costComplex:9600},
+{id:'i210',cat:'Инженерная сантехника',name:'Перепайка полотенцесушителя с байпасом',unit:'шт.',cost:10000,costComplex:12000},
+{id:'i211',cat:'Инженерная сантехника',name:'Гидроиспытание ХВС/ГВС',unit:'система',cost:6000,costComplex:7200},
+{id:'i212',cat:'Инженерная сантехника',name:'Опрессовка труб и подключение к коллектору',unit:'точка',cost:1500,costComplex:1800},
+{id:'i213',cat:'Инженерная сантехника',name:'Монтаж крепежного хомута',unit:'шт.',cost:450,costComplex:550},
+{id:'i214',cat:'Инженерная сантехника',name:'Сборка малого водоразборного узла',unit:'шт.',cost:25000,costComplex:30000},
+{id:'i215',cat:'Инженерная сантехника',name:'Сборка большого водоразборного узла',unit:'шт.',cost:75000,costComplex:90000},
+{id:'i216',cat:'Инженерная сантехника',name:'Обвязка водоразборного узла',unit:'шт.',cost:15000,costComplex:18000},
+{id:'i217',cat:'Инженерная сантехника',name:'Монтаж коллектора до 3 выводов',unit:'шт.',cost:6000,costComplex:7200},
+{id:'i218',cat:'Инженерная сантехника',name:'Монтаж коллектора более 3 выводов',unit:'шт.',cost:8000,costComplex:9600},
+{id:'i219',cat:'Инженерная сантехника',name:'Монтаж фильтра грубой очистки',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i220',cat:'Инженерная сантехника',name:'Монтаж промывного фильтра',unit:'шт.',cost:3000,costComplex:3600},
+{id:'i221',cat:'Инженерная сантехника',name:'Монтаж колбового фильтра',unit:'шт.',cost:4000,costComplex:4800},
+{id:'i222',cat:'Инженерная сантехника',name:'Монтаж редуктора давления',unit:'шт.',cost:2500,costComplex:3000},
+{id:'i223',cat:'Инженерная сантехника',name:'Монтаж счетчика воды',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i224',cat:'Инженерная сантехника',name:'Монтаж обратного клапана',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i225',cat:'Инженерная сантехника',name:'Монтаж манометра',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i226',cat:'Инженерная сантехника',name:'Монтаж компенсатора гидроудара',unit:'шт.',cost:1500,costComplex:1800},
+{id:'i227',cat:'Инженерная сантехника',name:'Монтаж запорного крана',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i228',cat:'Инженерная сантехника',name:'Монтаж электрокрана защиты от протечек',unit:'шт.',cost:3500,costComplex:4200},
+{id:'i229',cat:'Инженерная сантехника',name:'Монтаж модуля защиты от протечек',unit:'шт.',cost:4500,costComplex:5400},
+{id:'i230',cat:'Инженерная сантехника',name:'Монтаж проводного датчика протечки',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i231',cat:'Инженерная сантехника',name:'Монтаж проточного водонагревателя',unit:'шт.',cost:7000,costComplex:8400},
+{id:'i232',cat:'Инженерная сантехника',name:'Изготовление монтажного щита под узел',unit:'шт.',cost:18000,costComplex:21600},
+{id:'i233',cat:'Отопление',name:'Демонтаж/монтаж радиатора на существующее место',unit:'шт.',cost:4500,costComplex:5400},
+{id:'i234',cat:'Отопление',name:'Монтаж нового стандартного радиатора',unit:'шт.',cost:5500,costComplex:6600},
+{id:'i235',cat:'Отопление',name:'Монтаж нестандартного/крупного радиатора',unit:'шт.',cost:7000,costComplex:8400},
+{id:'i236',cat:'Отопление',name:'Перенос подачи и обратки радиатора',unit:'шт.',cost:10000,costComplex:12000},
+{id:'i237',cat:'Отопление',name:'Замена байпаса с кранами',unit:'шт.',cost:5000,costComplex:6000},
+{id:'i238',cat:'Отопление',name:'Замена стояка отопления с подводом к радиатору',unit:'шт.',cost:28000,costComplex:33600},
+{id:'i239',cat:'Отопление',name:'Гидроиспытание системы отопления',unit:'контур',cost:6000,costComplex:7200},
+{id:'i240',cat:'Отопление',name:'Монтаж внутрипольного конвектора',unit:'шт.',cost:18000,costComplex:21600},
+{id:'i241',cat:'Отопление',name:'Монтаж термоголовки/вентиля',unit:'шт.',cost:2000,costComplex:2400},
+{id:'i242',cat:'Отопление',name:'Покраска стояка отопления',unit:'шт.',cost:2500,costComplex:3000},
+{id:'i243',cat:'Чистовая сантехника',name:'Монтаж подвесного унитаза',unit:'шт.',cost:5500,costComplex:6600},
+{id:'i244',cat:'Чистовая сантехника',name:'Монтаж напольного унитаза',unit:'шт.',cost:4500,costComplex:5400},
+{id:'i245',cat:'Чистовая сантехника',name:'Монтаж кнопки инсталляции',unit:'шт.',cost:2000,costComplex:2400},
+{id:'i246',cat:'Чистовая сантехника',name:'Монтаж подвесной раковины',unit:'шт.',cost:4000,costComplex:4800},
+{id:'i247',cat:'Чистовая сантехника',name:'Монтаж накладной раковины',unit:'шт.',cost:3000,costComplex:3600},
+{id:'i248',cat:'Чистовая сантехника',name:'Монтаж врезной раковины',unit:'шт.',cost:4500,costComplex:5400},
+{id:'i249',cat:'Чистовая сантехника',name:'Монтаж тумбы с раковиной',unit:'шт.',cost:5000,costComplex:6000},
+{id:'i250',cat:'Чистовая сантехника',name:'Монтаж смесителя на раковину',unit:'шт.',cost:3000,costComplex:3600},
+{id:'i251',cat:'Чистовая сантехника',name:'Монтаж обвязки раковины',unit:'шт.',cost:2500,costComplex:3000},
+{id:'i252',cat:'Чистовая сантехника',name:'Монтаж душевой системы',unit:'шт.',cost:4500,costComplex:5400},
+{id:'i253',cat:'Чистовая сантехника',name:'Монтаж гигиенического душа',unit:'шт.',cost:2500,costComplex:3000},
+{id:'i254',cat:'Чистовая сантехника',name:'Монтаж акриловой ванны',unit:'шт.',cost:12000,costComplex:14400},
+{id:'i255',cat:'Чистовая сантехника',name:'Монтаж стальной ванны с шумоизоляцией',unit:'шт.',cost:16000,costComplex:19200},
+{id:'i256',cat:'Чистовая сантехника',name:'Монтаж чугунной ванны',unit:'шт.',cost:20000,costComplex:24000},
+{id:'i257',cat:'Чистовая сантехника',name:'Монтаж ванны из искусственного камня',unit:'шт.',cost:30000,costComplex:36000},
+{id:'i258',cat:'Чистовая сантехника',name:'Монтаж обвязки ванны',unit:'шт.',cost:3500,costComplex:4200},
+{id:'i259',cat:'Чистовая сантехника',name:'Монтаж душевого стекла',unit:'шт.',cost:12000,costComplex:14400},
+{id:'i260',cat:'Чистовая сантехника',name:'Монтаж откатной стеклянной перегородки',unit:'шт.',cost:15000,costComplex:18000},
+{id:'i261',cat:'Чистовая сантехника',name:'Подключение стиральной машины',unit:'шт.',cost:3500,costComplex:4200},
+{id:'i262',cat:'Чистовая сантехника',name:'Подключение посудомоечной машины',unit:'шт.',cost:3500,costComplex:4200},
+{id:'i263',cat:'Чистовая сантехника',name:'Монтаж полотенцесушителя',unit:'шт.',cost:4500,costComplex:5400},
+{id:'i264',cat:'Чистовая сантехника',name:'Монтаж крана на водорозетку',unit:'шт.',cost:1800,costComplex:2150},
+{id:'i265',cat:'Двери, окна, откосы',name:'Формирование дверного откоса штукатуркой',unit:'п.м.',cost:1600,costComplex:1900},
+{id:'i266',cat:'Двери, окна, откосы',name:'Формирование оконного откоса штукатуркой',unit:'п.м.',cost:1600,costComplex:1900},
+{id:'i267',cat:'Двери, окна, откосы',name:'Монтаж откоса ГКЛ',unit:'п.м.',cost:1400,costComplex:1700},
+{id:'i268',cat:'Двери, окна, откосы',name:'Монтаж подоконника ПВХ',unit:'п.м.',cost:1800,costComplex:2150},
+{id:'i269',cat:'Двери, окна, откосы',name:'Монтаж деревянного подоконника',unit:'п.м.',cost:2500,costComplex:3000},
+{id:'i270',cat:'Двери, окна, откосы',name:'Монтаж межкомнатной двери стандарт',unit:'шт.',cost:9000,costComplex:10800},
+{id:'i271',cat:'Двери, окна, откосы',name:'Монтаж добора двери',unit:'п.м.',cost:1200,costComplex:1450},
+{id:'i272',cat:'Двери, окна, откосы',name:'Монтаж наличника',unit:'п.м.',cost:700,costComplex:850},
+{id:'i273',cat:'Двери, окна, откосы',name:'Установка дверного порога',unit:'шт.',cost:1500,costComplex:1800},
+{id:'i274',cat:'Двери, окна, откосы',name:'Монтаж скрытой двери',unit:'шт.',cost:18000,costComplex:21600},
+{id:'i275',cat:'Двери, окна, откосы',name:'Регулировка оконной фурнитуры',unit:'створка',cost:1500,costComplex:1800},
+{id:'i276',cat:'Двери, окна, откосы',name:'Замена стеклопакета',unit:'шт.',cost:3500,costComplex:4200},
+{id:'i277',cat:'Потолки',name:'Монтаж натяжного потолка ПВХ',unit:'м²',cost:1200,costComplex:1450},
+{id:'i278',cat:'Потолки',name:'Монтаж теневого профиля',unit:'п.м.',cost:1200,costComplex:1450},
+{id:'i279',cat:'Потолки',name:'Монтаж световой линии',unit:'п.м.',cost:2500,costComplex:3000},
+{id:'i280',cat:'Потолки',name:'Монтаж карниза скрытого',unit:'п.м.',cost:2200,costComplex:2650},
+{id:'i281',cat:'Потолки',name:'Монтаж потолочного плинтуса полиуретан',unit:'п.м.',cost:900,costComplex:1100},
+{id:'i282',cat:'Потолки',name:'Монтаж декоративного молдинга',unit:'п.м.',cost:1000,costComplex:1200},
+{id:'i283',cat:'Потолки',name:'Монтаж потолочной розетки',unit:'шт.',cost:2500,costComplex:3000},
+{id:'i284',cat:'Вентиляция и кондиционирование',name:'Прокладка вентиляционного канала до 125 мм',unit:'п.м.',cost:1800,costComplex:2150},
+{id:'i285',cat:'Вентиляция и кондиционирование',name:'Монтаж вентилятора',unit:'шт.',cost:2500,costComplex:3000},
+{id:'i286',cat:'Вентиляция и кондиционирование',name:'Перенос вентиляционного выхода',unit:'шт.',cost:2500,costComplex:3000},
+{id:'i287',cat:'Вентиляция и кондиционирование',name:'Скрытая пассивная вентиляция',unit:'шт.',cost:3500,costComplex:4200},
+{id:'i288',cat:'Вентиляция и кондиционирование',name:'Отверстие под вентиляцию в керамограните',unit:'шт.',cost:2000,costComplex:2400},
+{id:'i289',cat:'Вентиляция и кондиционирование',name:'Подготовка трассы кондиционера',unit:'компл.',cost:6000,costComplex:7200},
+{id:'i290',cat:'Дополнительные и специальные работы',name:'Монтаж декоративной стеновой панели',unit:'м²',cost:4500,costComplex:5400},
+{id:'i291',cat:'Дополнительные и специальные работы',name:'Фрезеровка торца панели',unit:'п.м.',cost:1400,costComplex:1700},
+{id:'i292',cat:'Дополнительные и специальные работы',name:'Распил панели в размер',unit:'п.м.',cost:600,costComplex:700},
+{id:'i293',cat:'Дополнительные и специальные работы',name:'Шлифовка лицевой стороны панели',unit:'м²',cost:800,costComplex:950},
+{id:'i294',cat:'Дополнительные и специальные работы',name:'Покрытие панели маслом',unit:'м²',cost:600,costComplex:700},
+{id:'i295',cat:'Дополнительные и специальные работы',name:'Монтаж декоративного профиля',unit:'п.м.',cost:800,costComplex:950},
+{id:'i296',cat:'Дополнительные и специальные работы',name:'Выпил отверстия в панели',unit:'шт.',cost:800,costComplex:950},
+{id:'i297',cat:'Дополнительные и специальные работы',name:'Утепление пеноплексом',unit:'м²',cost:1200,costComplex:1450},
+{id:'i298',cat:'Дополнительные и специальные работы',name:'Утепление подоконной стены пеноплексом',unit:'п.м.',cost:1000,costComplex:1200},
+{id:'i299',cat:'Дополнительные и специальные работы',name:'Монтаж шумоизоляционного материала',unit:'м²',cost:1200,costComplex:1450},
+{id:'i300',cat:'Дополнительные и специальные работы',name:'Подъем материалов вручную',unit:'этаж/компл.',cost:1500,costComplex:1800},
+{id:'i301',cat:'Дополнительные и специальные работы',name:'Доставка инструмента/станции',unit:'рейс',cost:4000,costComplex:4800},
+{id:'i302',cat:'Дополнительные и специальные работы',name:'Клининг после этапа работ',unit:'м²',cost:450,costComplex:550},
+{id:'i303',cat:'Дополнительные и специальные работы',name:'Вывоз строительного мусора',unit:'рейс',cost:25000,costComplex:30000},
+{id:'i304',cat:'Дополнительные и специальные работы',name:'Работы в зоне платной парковки',unit:'день',cost:0,costComplex:0},
+{id:'i305',cat:'Дополнительные и специальные работы',name:'Минимальный заказ на выездные работы',unit:'заказ',cost:10000,costComplex:12000}
+];
+
+  /* ---------- state ---------- */
+  var state = {
+    client: {name:"", address:"", phone:"", visitDate:""},
+    markup: 0, useComplex: false,
+    rooms: [],
+    prices: JSON.parse(JSON.stringify(DEFAULT_PRICES)),
+    smeta: [] // {id, roomId, roomName, priceId, cat, name, unit, cost, costComplex, qty}
+  };
+
+  var uid = function(p){ return p + Math.random().toString(36).slice(2,9); };
+  function fmt(n){ return Math.round(n||0).toLocaleString("ru-RU"); }
+  function baseCost(line){ return state.useComplex ? (line.costComplex||line.cost) : line.cost; }
+  function clientUnitPrice(line){ return baseCost(line) * (1 + (state.markup||0)/100); }
+
+  /* ---------- storage ---------- */
+  var STORE_KEY = "pragma_smeta_projects_v3";
+  function readStore(){ try{ var r=localStorage.getItem(STORE_KEY); return r?JSON.parse(r):{}; }catch(e){ return {}; } }
+  function writeStore(o){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(o)); return true; }catch(e){ return false; } }
+  function toast(msg){
+    var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(toast._h); toast._h=setTimeout(function(){t.classList.remove("show");},2200);
+  }
+
+  function priceById(id){ for(var i=0;i<state.prices.length;i++) if(state.prices[i].id===id) return state.prices[i]; return null; }
+
+  /* ---------- quick-fill suggestion ---------- */
+  function suggestQty(item, room){
+    if(!room) return 1;
+    var n = item.name.toLowerCase();
+    if(item.unit === "м²"){
+      if(n.indexOf("потолк") > -1) return room.ceilingArea || 1;
+      if(n.indexOf("пол") > -1 && n.indexOf("потолк") === -1) return room.floorArea || 1;
+      if(n.indexOf("стен") > -1) return room.wallArea || 1;
+      return room.floorArea || room.wallArea || 1;
+    }
+    if(item.unit === "п.м."){
+      if(n.indexOf("откос") > -1) return room.slopesLength || 1;
+      return room.perimeter || 1;
+    }
+    return 1;
+  }
+
+  function quickFillButtons(item, room, qtyInput){
+    var wrap = document.createElement("div"); wrap.className = "pr-quick";
+    if(!room) return wrap;
+    var opts = [];
+    if(item.unit === "м²"){
+      if(room.floorArea) opts.push(["Пол "+room.floorArea+"м²", room.floorArea]);
+      if(room.wallArea) opts.push(["Стены "+room.wallArea+"м²", room.wallArea]);
+      if(room.ceilingArea) opts.push(["Потолок "+room.ceilingArea+"м²", room.ceilingArea]);
+    } else if(item.unit === "п.м."){
+      if(room.perimeter) opts.push(["Периметр "+room.perimeter, room.perimeter]);
+      if(room.slopesLength) opts.push(["Откосы "+room.slopesLength, room.slopesLength]);
+    }
+    opts.forEach(function(o){
+      var b=document.createElement("button"); b.type="button"; b.className="btn ghost small"; b.textContent=o[0];
+      b.addEventListener("click", function(){ qtyInput.value = o[1]; });
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
+
+  /* ---------- reusable price picker ---------- */
+  function buildPicker(room, onAdded){
+    var box = document.createElement("div"); box.className="picker collapsed";
+
+    var controls = document.createElement("div"); controls.className="picker-controls";
+    var search = document.createElement("input"); search.type="text"; search.placeholder="Начните вводить название работы…";
+    var catSel = document.createElement("select");
+    var allOpt=document.createElement("option"); allOpt.value=""; allOpt.textContent="Все разделы"; catSel.appendChild(allOpt);
+    CATEGORIES.forEach(function(c){ var o=document.createElement("option"); o.value=c; o.textContent=c; catSel.appendChild(o); });
+    controls.appendChild(search); controls.appendChild(catSel);
+
+    var results = document.createElement("div"); results.className="picker-results";
+
+    function renderResults(){
+      var q = search.value.trim().toLowerCase();
+      var cat = catSel.value;
+      results.innerHTML = "";
+      if(!q && !cat){
+        var hint = document.createElement("div"); hint.className="picker-hint";
+        hint.textContent = "Введите название работы или выберите раздел прайса.";
+        results.appendChild(hint); return;
+      }
+      var matches = state.prices.filter(function(p){
+        var okCat = !cat || p.cat === cat;
+        var okQ = !q || p.name.toLowerCase().indexOf(q) > -1;
+        return okCat && okQ;
+      });
+      var shown = matches.slice(0, 60);
+      shown.forEach(function(item){
+        var row = document.createElement("div"); row.className="picker-row";
+        var nameWrap = document.createElement("div"); nameWrap.className="pr-name";
+        nameWrap.textContent = item.name;
+        var catSpan = document.createElement("span"); catSpan.className="pr-cat"; catSpan.textContent = item.cat + " · " + item.unit;
+        nameWrap.appendChild(catSpan);
+
+        var priceSpan = document.createElement("div"); priceSpan.className="pr-price";
+        priceSpan.textContent = fmt(item.cost) + " ₽" + (item.costComplex && item.costComplex!==item.cost ? (" / " + fmt(item.costComplex) + " ₽ слож.") : "");
+
+        var qtyIn = document.createElement("input"); qtyIn.type="number"; qtyIn.min="0"; qtyIn.step="0.1"; qtyIn.className="pr-qty";
+        qtyIn.value = suggestQty(item, room);
+
+        var quick = quickFillButtons(item, room, qtyIn);
+
+        var addBtn = document.createElement("button"); addBtn.className="btn small"; addBtn.textContent="+ добавить";
+        addBtn.addEventListener("click", function(){
+          var qty = parseFloat(qtyIn.value) || 0;
+          if(!qty){ toast("Укажите количество"); return; }
+          state.smeta.push({
+            id: uid("s_"), roomId: room?room.id:"", roomName: room?room.name:"",
+            priceId: item.id, cat: item.cat, name: item.name, unit: item.unit,
+            cost: item.cost, costComplex: item.costComplex, qty: qty
+          });
+          save();
+          onAdded();
+          toast("Добавлено: " + item.name);
+        });
+
+        row.appendChild(nameWrap); row.appendChild(priceSpan); row.appendChild(qtyIn); row.appendChild(quick); row.appendChild(addBtn);
+        results.appendChild(row);
+      });
+      if(!shown.length){
+        var e=document.createElement("div"); e.className="picker-hint"; e.textContent="Ничего не найдено.";
+        results.appendChild(e);
+      } else if(matches.length > shown.length){
+        var more=document.createElement("div"); more.className="picker-hint";
+        more.textContent = "Показаны первые " + shown.length + " из " + matches.length + " — уточните поиск.";
+        results.appendChild(more);
+      }
+    }
+    search.addEventListener("input", renderResults);
+    catSel.addEventListener("change", renderResults);
+    renderResults();
+
+    box.appendChild(controls); box.appendChild(results);
+    return box;
+  }
+
+  function buildPickerToggle(room, onAdded){
+    var wrap = document.createElement("div");
+    var toggle = document.createElement("div"); toggle.className="picker-toggle";
+    var lbl = document.createElement("span"); lbl.className="lbl"; lbl.textContent = "+ Добавить работы из прайса";
+    var arrow = document.createElement("span"); arrow.className="arrow"; arrow.textContent="развернуть ▾";
+    toggle.appendChild(lbl); toggle.appendChild(arrow);
+    var picker = buildPicker(room, onAdded);
+    toggle.addEventListener("click", function(){
+      var open = !picker.classList.contains("collapsed");
+      picker.classList.toggle("collapsed", open);
+      arrow.textContent = open ? "развернуть ▾" : "свернуть ▴";
+    });
+    wrap.appendChild(toggle); wrap.appendChild(picker);
+    return wrap;
+  }
+
+  /* ---------- shared smeta line row ---------- */
+  function renderLineRow(line, showRoomCol){
+    var tr = document.createElement("tr");
+    var tdCat = document.createElement("td");
+    var badge = document.createElement("span"); badge.className="cat-badge"; badge.textContent=line.cat;
+    tdCat.appendChild(badge);
+    var tdName = document.createElement("td"); tdName.textContent = line.name;
+    tr.appendChild(tdCat); tr.appendChild(tdName);
+
+    if(showRoomCol){
+      var tdRoom = document.createElement("td"); tdRoom.textContent = line.roomName || "Общие работы"; tdRoom.style.color="var(--ink-soft)";
+      tr.appendChild(tdRoom);
+    }
+
+    var tdQty = document.createElement("td"); tdQty.className="num qty-cell";
+    var qtyIn = document.createElement("input"); qtyIn.type="number"; qtyIn.min="0"; qtyIn.step="0.1"; qtyIn.value=line.qty;
+    qtyIn.addEventListener("input", function(){ line.qty = parseFloat(qtyIn.value)||0; save(); renderCurrent(); });
+    tdQty.appendChild(qtyIn); tr.appendChild(tdQty);
+
+    var tdUnit = document.createElement("td"); tdUnit.textContent = line.unit; tr.appendChild(tdUnit);
+
+    if(showRoomCol){
+      var tdCost = document.createElement("td"); tdCost.className="num master-col cost-cell";
+      var costIn = document.createElement("input"); costIn.type="number"; costIn.min="0"; costIn.step="1"; costIn.value = baseCost(line);
+      costIn.addEventListener("input", function(){ line.cost = parseFloat(costIn.value)||0; line.costComplex = line.cost; save(); renderCurrent(); });
+      tdCost.appendChild(costIn); tr.appendChild(tdCost);
+
+      var unitClient = clientUnitPrice(line);
+      var tdClientUnit = document.createElement("td"); tdClientUnit.className="num"; tdClientUnit.textContent = fmt(unitClient);
+      var tdMasterSum = document.createElement("td"); tdMasterSum.className="num master-col"; tdMasterSum.textContent = fmt(baseCost(line)*line.qty);
+      var tdClientSum = document.createElement("td"); tdClientSum.className="num"; tdClientSum.textContent = fmt(unitClient*line.qty);
+      tr.appendChild(tdClientUnit); tr.appendChild(tdMasterSum); tr.appendChild(tdClientSum);
+    } else {
+      var uc = clientUnitPrice(line);
+      var tdSum = document.createElement("td"); tdSum.className="num"; tdSum.textContent = fmt(baseCost(line)*line.qty) + " ₽ / " + fmt(uc*line.qty) + " ₽";
+      tdSum.title = "себестоимость / цена клиенту";
+      tr.appendChild(tdSum);
+    }
+
+    var tdActions = document.createElement("td"); tdActions.className="no-print actions";
+    var del = document.createElement("button"); del.className="btn danger small"; del.textContent="✕";
+    del.addEventListener("click", function(){ state.smeta = state.smeta.filter(function(l){return l.id!==line.id;}); save(); renderCurrent(); });
+    tdActions.appendChild(del); tr.appendChild(tdActions);
+
+    return tr;
+  }
+
+  function renderMiniLinesTable(lines){
+    if(!lines.length) return null;
+    var wrap = document.createElement("div"); wrap.className="table-scroll"; wrap.style.marginTop="10px";
+    var table = document.createElement("table");
+    table.innerHTML = "<thead><tr><th>Раздел</th><th>Работа</th><th class='num'>Кол-во</th><th>Ед.</th><th class='no-print'></th></tr></thead>";
+    var body = document.createElement("tbody");
+    lines.forEach(function(line){
+      var tr = document.createElement("tr");
+      var tdCat=document.createElement("td"); var b=document.createElement("span"); b.className="cat-badge"; b.textContent=line.cat; tdCat.appendChild(b);
+      var tdName=document.createElement("td"); tdName.textContent=line.name;
+      var tdQty=document.createElement("td"); tdQty.className="num qty-cell";
+      var qtyIn=document.createElement("input"); qtyIn.type="number"; qtyIn.min="0"; qtyIn.step="0.1"; qtyIn.value=line.qty;
+      qtyIn.addEventListener("input", function(){ line.qty=parseFloat(qtyIn.value)||0; save(); renderCurrent(); });
+      tdQty.appendChild(qtyIn);
+      var tdUnit=document.createElement("td"); tdUnit.textContent=line.unit;
+      var tdDel=document.createElement("td"); tdDel.className="no-print";
+      var del=document.createElement("button"); del.className="btn danger small"; del.textContent="✕";
+      del.addEventListener("click", function(){ state.smeta=state.smeta.filter(function(l){return l.id!==line.id;}); save(); renderCurrent(); });
+      tdDel.appendChild(del);
+      tr.appendChild(tdCat); tr.appendChild(tdName); tr.appendChild(tdQty); tr.appendChild(tdUnit); tr.appendChild(tdDel);
+      body.appendChild(tr);
+    });
+    table.appendChild(body); wrap.appendChild(table);
+    return wrap;
+  }
+
+  /* ---------- rooms ---------- */
+  function blankRoom(){ return { id: uid("r_"), name:"Помещение", floorArea:0, wallArea:0, ceilingArea:0, perimeter:0, slopesLength:0 }; }
+  function addRoom(prefill){ state.rooms.push(prefill || blankRoom()); renderCurrent(); }
+
+  function renderRooms(container){
+    container.innerHTML = "";
+    document.getElementById("roomsEmpty").style.display = state.rooms.length ? "none" : "block";
+
+    state.rooms.forEach(function(room){
+      var card = document.createElement("div"); card.className="room-card";
+
+      var head=document.createElement("div"); head.className="room-head";
+      var nameInput=document.createElement("input"); nameInput.value=room.name;
+      nameInput.addEventListener("input", function(){ room.name=nameInput.value; state.smeta.forEach(function(l){ if(l.roomId===room.id) l.roomName=room.name; }); save(); });
+      var delBtn=document.createElement("button"); delBtn.className="btn danger small no-print"; delBtn.textContent="Удалить помещение";
+      delBtn.addEventListener("click", function(){
+        state.rooms = state.rooms.filter(function(r){return r.id!==room.id;});
+        state.smeta = state.smeta.filter(function(l){return l.roomId!==room.id;});
+        save(); renderCurrent();
+      });
+      head.appendChild(nameInput); head.appendChild(delBtn);
+
+      function fieldNum(labelText, key){
+        var lab=document.createElement("label"); lab.className="field";
+        var sp=document.createElement("span"); sp.textContent=labelText;
+        var inp=document.createElement("input"); inp.type="number"; inp.min="0"; inp.step="0.1"; inp.value=room[key];
+        inp.addEventListener("input", function(){ room[key]=parseFloat(inp.value)||0; save(); });
+        lab.appendChild(sp); lab.appendChild(inp); return lab;
+      }
+      var measureLabel=document.createElement("div"); measureLabel.className="section-label"; measureLabel.textContent="ЗАМЕРЫ";
+      var gridMeasure=document.createElement("div"); gridMeasure.className="grid cols-5";
+      gridMeasure.appendChild(fieldNum("Площадь пола, м²","floorArea"));
+      gridMeasure.appendChild(fieldNum("Площадь стен, м²","wallArea"));
+      gridMeasure.appendChild(fieldNum("Площадь потолка, м²","ceilingArea"));
+      gridMeasure.appendChild(fieldNum("Периметр, пог.м","perimeter"));
+      gridMeasure.appendChild(fieldNum("Откосы, пог.м","slopesLength"));
+
+      card.appendChild(head); card.appendChild(measureLabel); card.appendChild(gridMeasure);
+
+      var myLines = state.smeta.filter(function(l){ return l.roomId===room.id; });
+      var linesLabel=document.createElement("div"); linesLabel.className="section-label"; linesLabel.textContent="РАБОТЫ ПО ПОМЕЩЕНИЮ ("+myLines.length+")";
+      card.appendChild(linesLabel);
+      var minitable = renderMiniLinesTable(myLines);
+      if(minitable) card.appendChild(minitable);
+      else { var e=document.createElement("div"); e.className="empty"; e.textContent="Пока ничего не добавлено."; card.appendChild(e); }
+
+      card.appendChild(buildPickerToggle(room, renderCurrent));
+
+      container.appendChild(card);
+    });
+  }
+
+  /* ---------- general (unassigned) lines ---------- */
+  function renderGeneral(){
+    var linesBox = document.getElementById("generalLines");
+    var lines = state.smeta.filter(function(l){ return !l.roomId; });
+    linesBox.innerHTML = "";
+    var mt = renderMiniLinesTable(lines);
+    if(mt) linesBox.appendChild(mt);
+    else { var e=document.createElement("div"); e.className="empty"; e.textContent="Пока ничего не добавлено."; linesBox.appendChild(e); }
+
+    var mount = document.getElementById("generalPickerMount");
+    mount.innerHTML = "";
+    mount.appendChild(buildPickerToggle(null, renderCurrent));
+  }
+
+  /* ---------- smeta tab ---------- */
+  function renderSmetaTab(){
+    var body = document.getElementById("smetaBody");
+    body.innerHTML = "";
+    document.getElementById("smetaEmpty").style.display = state.smeta.length ? "none" : "block";
+
+    var sorted = state.smeta.slice().sort(function(a,b){
+      var ra = a.roomName || "\uffff", rb = b.roomName || "\uffff";
+      return ra.localeCompare(rb) || a.cat.localeCompare(b.cat);
+    });
+    var masterSubtotal=0, clientSubtotal=0;
+    sorted.forEach(function(line){
+      masterSubtotal += baseCost(line)*line.qty;
+      clientSubtotal += clientUnitPrice(line)*line.qty;
+      body.appendChild(renderLineRow(line, true));
+    });
+    document.getElementById("masterSubtotalCell").textContent = fmt(masterSubtotal);
+    document.getElementById("totalCell").textContent = fmt(clientSubtotal) + " ₽";
+  }
+
+  document.getElementById("markupPct").addEventListener("input", function(e){ state.markup=parseFloat(e.target.value)||0; save(); renderCurrent(); });
+  document.getElementById("useComplex").addEventListener("change", function(e){ state.useComplex = e.target.checked; save(); renderCurrent(); });
+
+  /* ---------- export ---------- */
+  document.getElementById("printBtn").addEventListener("click", function(){ window.print(); });
+  document.getElementById("copyTextBtn").addEventListener("click", function(){
+    var lines=[]; lines.push("Предварительная смета — отделка квартиры");
+    lines.push("Заказчик: "+(state.client.name||"—")); lines.push("Объект: "+(state.client.address||"—")); lines.push("");
+    var sorted = state.smeta.slice().sort(function(a,b){ return (a.roomName||"\uffff").localeCompare(b.roomName||"\uffff"); });
+    var lastRoom = null;
+    sorted.forEach(function(l){
+      var rn = l.roomName || "Общие работы";
+      if(rn !== lastRoom){ lines.push(""); lines.push("— " + rn + " —"); lastRoom = rn; }
+      var uc = clientUnitPrice(l);
+      lines.push([l.name, l.qty+" "+l.unit, fmt(uc)+" ₽", fmt(uc*l.qty)+" ₽"].join("  |  "));
+    });
+    var total = state.smeta.reduce(function(a,l){return a+clientUnitPrice(l)*l.qty;},0);
+    lines.push(""); lines.push("Итого к оплате: "+fmt(total)+" ₽");
+    var text = lines.join("\n");
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ toast("Скопировано в буфер обмена"); }).catch(function(){ toast("Не удалось скопировать"); });
+    } else toast("Буфер обмена недоступен");
+  });
+
+  /* ---------- price list tab ---------- */
+  function renderPriceTable(){
+    var q = document.getElementById("priceSearch").value.trim().toLowerCase();
+    var cat = document.getElementById("priceCatFilter").value;
+    var body = document.getElementById("priceBody");
+    body.innerHTML = "";
+    var list = state.prices.filter(function(p){
+      return (!cat || p.cat===cat) && (!q || p.name.toLowerCase().indexOf(q)>-1);
+    });
+    list.forEach(function(row){
+      var tr=document.createElement("tr");
+      var tdCat=document.createElement("td");
+      var selCat=document.createElement("select");
+      CATEGORIES.forEach(function(c){ var o=document.createElement("option"); o.value=c; o.textContent=c; if(c===row.cat) o.selected=true; selCat.appendChild(o); });
+      selCat.addEventListener("change", function(){ row.cat=selCat.value; save(); });
+      tdCat.appendChild(selCat);
+
+      var tdName=document.createElement("td");
+      var inName=document.createElement("input"); inName.value=row.name;
+      inName.addEventListener("input", function(){ row.name=inName.value; save(); });
+      tdName.appendChild(inName);
+
+      var tdUnit=document.createElement("td");
+      var selUnit=document.createElement("select");
+      UNITS.forEach(function(u){ var o=document.createElement("option"); o.value=u; o.textContent=u; if(u===row.unit) o.selected=true; selUnit.appendChild(o); });
+      selUnit.addEventListener("change", function(){ row.unit=selUnit.value; save(); });
+      tdUnit.appendChild(selUnit);
+
+      var tdCost=document.createElement("td"); tdCost.className="num";
+      var inCost=document.createElement("input"); inCost.type="number"; inCost.min="0"; inCost.step="1"; inCost.value=row.cost; inCost.style.textAlign="right";
+      inCost.addEventListener("input", function(){ row.cost=parseFloat(inCost.value)||0; save(); renderCurrent(); });
+      tdCost.appendChild(inCost);
+
+      var tdComplex=document.createElement("td"); tdComplex.className="num";
+      var inComplex=document.createElement("input"); inComplex.type="number"; inComplex.min="0"; inComplex.step="1"; inComplex.value=row.costComplex; inComplex.style.textAlign="right";
+      inComplex.addEventListener("input", function(){ row.costComplex=parseFloat(inComplex.value)||0; save(); renderCurrent(); });
+      tdComplex.appendChild(inComplex);
+
+      var tdActions=document.createElement("td"); tdActions.className="no-print actions";
+      var del=document.createElement("button"); del.className="btn danger small"; del.textContent="Удалить";
+      del.addEventListener("click", function(){ state.prices=state.prices.filter(function(p){return p.id!==row.id;}); save(); renderPriceTable(); });
+      tdActions.appendChild(del);
+
+      tr.appendChild(tdCat); tr.appendChild(tdName); tr.appendChild(tdUnit); tr.appendChild(tdCost); tr.appendChild(tdComplex); tr.appendChild(tdActions);
+      body.appendChild(tr);
+    });
+    document.getElementById("priceCountHint").textContent = "Показано " + list.length + " из " + state.prices.length + " позиций.";
+  }
+  document.getElementById("addPriceBtn").addEventListener("click", function(){
+    state.prices.push({id:uid("p_"), cat:"Дополнительные и специальные работы", name:"Новая позиция", unit:"м²", cost:0, costComplex:0});
+    save(); renderPriceTable();
+  });
+  document.getElementById("priceSearch").addEventListener("input", renderPriceTable);
+  document.getElementById("priceCatFilter").addEventListener("change", renderPriceTable);
+  (function initCatFilter(){
+    var sel = document.getElementById("priceCatFilter");
+    CATEGORIES.forEach(function(c){ var o=document.createElement("option"); o.value=c; o.textContent=c; sel.appendChild(o); });
+  })();
+
+  /* ---------- save / load projects ---------- */
+  function collectState(){ return { client: state.client, markup: state.markup, useComplex: state.useComplex, rooms: state.rooms, prices: state.prices, smeta: state.smeta, savedAt: new Date().toISOString() }; }
+  function refreshClientFromInputs(){
+    state.client.name = document.getElementById("clientName").value;
+    state.client.address = document.getElementById("clientAddress").value;
+    state.client.phone = document.getElementById("clientPhone").value;
+    state.client.visitDate = document.getElementById("visitDate").value;
+  }
+  ["clientName","clientAddress","clientPhone","visitDate"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", function(){ refreshClientFromInputs(); save(); });
+  });
+  function applyClientToInputs(){
+    document.getElementById("clientName").value = state.client.name||"";
+    document.getElementById("clientAddress").value = state.client.address||"";
+    document.getElementById("clientPhone").value = state.client.phone||"";
+    document.getElementById("visitDate").value = state.client.visitDate||"";
+    document.getElementById("markupPct").value = state.markup||0;
+    document.getElementById("useComplex").checked = !!state.useComplex;
+  }
+  function save(){ /* autosave disabled by default; explicit save via button. Kept as no-op hook. */ }
+
+  function renderSavedList(){
+    var store=readStore(); var sel=document.getElementById("savedProjects"); var cur=sel.value;
+    sel.innerHTML='<option value="">— сохранённые объекты —</option>';
+    Object.keys(store).forEach(function(k){ var o=document.createElement("option"); o.value=k; o.textContent=k; sel.appendChild(o); });
+    if(store[cur]) sel.value=cur;
+  }
+  document.getElementById("saveProjectBtn").addEventListener("click", function(){
+    refreshClientFromInputs();
+    var key=(state.client.name||"Без имени")+" — "+(state.client.address||"адрес не указан");
+    var store=readStore(); store[key]=collectState();
+    if(writeStore(store)){ toast("Объект сохранён в этом браузере"); renderSavedList(); }
+    else toast("Не удалось сохранить");
+  });
+  document.getElementById("loadProjectBtn").addEventListener("click", function(){
+    var key=document.getElementById("savedProjects").value; if(!key) return;
+    var data=readStore()[key]; if(!data) return;
+    state.client=data.client||state.client; state.markup=(typeof data.markup==="number")?data.markup:0; state.useComplex=!!data.useComplex;
+    state.rooms=(data.rooms||[]).map(function(r){ return Object.assign(blankRoom(), r); });
+    state.prices=(data.prices&&data.prices.length)?data.prices:JSON.parse(JSON.stringify(DEFAULT_PRICES));
+    state.smeta=data.smeta||[];
+    applyClientToInputs(); renderCurrent();
+    toast("Объект загружен: "+key);
+  });
+  document.getElementById("deleteProjectBtn").addEventListener("click", function(){
+    var key=document.getElementById("savedProjects").value; if(!key) return;
+    var store=readStore(); delete store[key]; writeStore(store); renderSavedList(); toast("Объект удалён");
+  });
+
+  /* ---------- tabs ---------- */
+  document.querySelectorAll("nav.tabs button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll("nav.tabs button").forEach(function(b){b.classList.remove("active");});
+      btn.classList.add("active");
+      document.querySelectorAll(".tab-panel").forEach(function(p){p.style.display="none";});
+      document.getElementById("tab-"+btn.dataset.tab).style.display="block";
+    });
+  });
+
+  /* ---------- theme ---------- */
+  var themeBtn=document.getElementById("themeToggle");
+  function setTheme(mode){
+    if(mode==="dark"){ document.documentElement.setAttribute("data-theme","dark"); themeBtn.textContent="светлая тема"; }
+    else { document.documentElement.setAttribute("data-theme","light"); themeBtn.textContent="тёмная тема"; }
+    try{ localStorage.setItem("pragma_smeta_theme", mode); }catch(e){}
+  }
+  themeBtn.addEventListener("click", function(){ setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark"); });
+  try{ var st=localStorage.getItem("pragma_smeta_theme"); if(st) setTheme(st); }catch(e){}
+
+  /* ---------- master render ---------- */
+  function renderCurrent(){
+    renderRooms(document.getElementById("roomsList"));
+    renderGeneral();
+    renderSmetaTab();
+    renderPriceTable();
+  }
+
+  /* ---------- init ---------- */
+  state.client.name = "Сосновский Владимир Вячеславович";
+  applyClientToInputs();
+  var r1 = blankRoom(); r1.name="Кухня"; r1.floorArea=9; r1.wallArea=24; r1.ceilingArea=9; r1.perimeter=12; r1.slopesLength=3;
+  addRoom(r1);
+  renderSavedList();
+  renderCurrent();
+
+})();
+</script>
+</body>
+</html>
