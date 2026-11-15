@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор сметы — отделка квартир</title>
+<style>
+  :root {
+    --bg: #1a1d23;
+    --bg-2: #242831;
+    --bg-3: #2e333d;
+    --border: #3a3f4b;
+    --text: #e8eaed;
+    --text-dim: #9aa0a6;
+    --accent: #f5b301;
+    --accent-2: #ffcf4d;
+    --danger: #e57373;
+    --success: #81c784;
+    --master: #f5b301;
+    --client: #4fc3f7;
+  }
+  [data-theme="light"] {
+    --bg: #f5f6f8;
+    --bg-2: #ffffff;
+    --bg-3: #eef0f3;
+    --border: #d8dbe0;
+    --text: #1a1d23;
+    --text-dim: #5f6368;
+    --accent: #d97706;
+    --accent-2: #b45309;
+    --master: #b45309;
+    --client: #0369a1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .sub { color: var(--text-dim); font-size: 12px; }
+  .header-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .theme-toggle, .backup-btn {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .backup-btn:hover { border-color: var(--accent); }
+  .backup-btn.primary { background: var(--accent); color: #1a1d23; border-color: var(--accent); font-weight: 600; }
+  .backup-info {
+    background: rgba(245, 179, 1, 0.08);
+    border: 1px dashed var(--accent);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 0 20px 12px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .backup-info b { color: var(--accent); }
+  .tabs {
+    display: flex;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 12px 18px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+  .panel {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .panel h2 { margin: 0 0 14px; font-size: 16px; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+  input, select, textarea {
+    width: 100%;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+  .checkbox-row input { width: auto; }
+  .btn {
+    background: var(--accent);
+    color: #1a1d23;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn.secondary { background: var(--bg-3); color: var(--text); border: 1px solid var(--border); }
+  .btn.danger { background: var(--danger); color: #fff; }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .room {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .room-meta { color: var(--text-dim); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  th {
+    background: var(--bg-2);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .price-master { color: var(--master); font-weight: 600; }
+  .price-client { color: var(--client); font-weight: 600; }
+  .empty { text-align: center; padding: 30px; color: var(--text-dim); font-style: italic; }
+  .saved-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+  .saved-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .saved-item:hover { border-color: var(--accent); }
+  .saved-item.active { border-color: var(--accent); background: rgba(245, 179, 1, 0.1); }
+  .saved-item .info { flex: 1; min-width: 0; }
+  .saved-item .name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .saved-item .meta { font-size: 11px; color: var(--text-dim); }
+  .price-search { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .price-search input { flex: 1; min-width: 200px; }
+  .price-item {
+    display: grid;
+    grid-template-columns: 1fr 60px 90px 100px auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .price-item:hover { background: rgba(245, 179, 1, 0.05); }
+  .price-item .pname { font-weight: 500; }
+  .price-item .pcat { color: var(--text-dim); font-size: 11px; }
+  .summary {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-top: 16px;
+  }
+  .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+  .summary-row.total {
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+    padding-top: 10px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .summary-row.total.client { color: var(--client); }
+  .summary-row.master { color: var(--master); }
+  .hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; font-style: italic; }
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h3 { margin-top: 0; }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--success);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s;
+    z-index: 200;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { background: var(--danger); }
+  .scroll-table { overflow-x: auto; }
+  @media print {
+    body { background: #fff; color: #000; }
+    header, .tabs, .no-print, .btn, .theme-toggle, .backup-info, .backup-btn { display: none !important; }
+    .panel { border: none; background: #fff; padding: 0; }
+    main { padding: 0; }
+    .master-only { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🔨 Калькулятор сметы — отделка квартир</h1>
+    <div class="sub">Прайс СПб 2026 · Профессора Попова 27</div>
+  </div>
+  <div class="header-btns">
+    <button class="backup-btn primary" onclick="exportBackup()">📥 Экспорт всех объектов</button>
+    <button class="backup-btn" onclick="document.getElementById('importFile').click()">📤 Импорт объектов</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+    <button class="theme-toggle" onclick="toggleTheme()">🌓 Тема</button>
+  </div>
+</header>
+
+<div class="backup-info">
+  💾 <b>Важно:</b> данные хранятся в браузере (localStorage) и могут потеряться при очистке кэша или переносе файла.
+  Регулярно делай <b>«Экспорт всех объектов»</b> — это сохранит все сметы в файл <code>smeta-backup.json</code>, который можно открыть на любом компьютере.
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="object" onclick="switchTab('object')">📋 Объект и помещения</div>
+  <div class="tab" data-tab="estimate" onclick="switchTab('estimate')">💰 Смета</div>
+  <div class="tab" data-tab="price" onclick="switchTab('price')">📖 Прайс-лист</div>
+</div>
+
+<main>
+
+<div id="tab-object">
+
+  <div class="panel">
+    <h2>💾 Сохранённые объекты <span id="savedCount" style="color:var(--text-dim);font-size:13px;font-weight:400"></span></h2>
+    <div id="savedList" class="saved-list"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="newProject()">➕ Новый объект</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📝 Данные объекта</h2>
+    <div class="grid">
+      <div><label>Заказчик</label><input type="text" id="clientName" placeholder="Иван Иванов"></div>
+      <div><label>Адрес объекта</label><input type="text" id="clientAddress" placeholder="ул. Профессора Попова, 27"></div>
+      <div><label>Телефон</label><input type="text" id="clientPhone" placeholder="+7 (999) 000-00-00"></div>
+      <div><label>Дата обращения</label><input type="date" id="clientDate"></div>
+      <div><label>Доп. наценка сверх прайса, %</label><input type="number" id="clientMarkup" value="0" min="0" step="1"></div>
+      <div><label>Название объекта (для сохранения)</label><input type="text" id="projectName" placeholder="Попова 27, кв. 15"></div>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="complexObject">
+      <label for="complexObject" style="margin:0;color:var(--text)">Сложный объект / дизайн-проект</label>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveProject()">💾 Сохранить объект</button>
+    </div>
+    <div class="hint">Прайс указывает цену работ «от», без материалов.</div>
+  </div>
+
+  <div class="panel">
+    <h2>🏠 Помещения</h2>
+    <div id="roomsList"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="addRoom()">➕ Добавить помещение</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>🔧 Общие работы</h2>
+    <div id="commonItemsList"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="openPriceModal('common')">➕ Добавить из прайса</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="tab-estimate" style="display:none">
+  <div class="panel no-print">
+    <h2>⚙️ Действия</h2>
+    <div class="btn-row">
+      <button class="btn" onclick="printEstimate()">🖨 Печать / PDF</button>
+      <button class="btn secondary" onclick="copyEstimateText()">📋 Скопировать как текст</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h2 id="estimateTitle">Предварительная смета</h2>
+    <div class="scroll-table">
+      <table>
+        <thead><tr>
+          <th>№</th><th>Категория</th><th>Наименование</th><th>Помещение</th>
+          <th>Кол-во</th><th>Ед.</th>
+          <th class="master-only">Цена мастера, ₽</th>
+          <th>Цена клиенту, ₽</th>
+          <th class="master-only">Сумма мастеру, ₽</th>
+          <th>Сумма клиенту, ₽</th>
+        </tr></thead>
+        <tbody id="estimateBody"></tbody>
+      </table>
+    </div>
+    <div class="summary">
+      <div class="summary-row master"><span>Итого себестоимость:</span><span id="totalMaster">0 ₽</span></div>
+      <div class="summary-row total client"><span>Итого к оплате:</span><span id="totalClient">0 ₽</span></div>
+      <div class="summary-row" style="color:var(--text-dim);font-size:12px"><span>Ваша прибыль:</span><span id="totalProfit">0 ₽</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-price" style="display:none">
+  <div class="panel">
+    <h2>📖 Прайс-лист</h2>
+    <div class="price-search">
+      <input type="text" id="priceSearch" placeholder="🔍 Поиск..." oninput="renderPriceList()">
+      <select id="priceCategory" onchange="renderPriceList()"><option value="">Все разделы</option></select>
+    </div>
+    <div id="priceList"></div>
+    <div class="btn-row">
+      <button class="btn secondary" onclick="resetPriceList()">↺ Сбросить прайс</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<div class="modal-bg" id="priceModal">
+  <div class="modal">
+    <h3>Выберите работу из прайса</h3>
+    <div class="price-search">
+      <input type="text" id="modalSearch" placeholder="🔍 Поиск..." oninput="renderModalPriceList()">
+      <select id="modalCategory" onchange="renderModalPriceList()"><option value="">Все разделы</option></select>
+    </div>
+    <div id="modalPriceList" style="max-height:400px;overflow-y:auto"></div>
+    <div class="btn-row">
+      <button class="btn secondary" onclick="closePriceModal()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_PRICE_LIST = [
+  { cat: "Демонтажные работы", name: "Демонтаж обоев", unit: "м²", pm: 90, pc: 110 },
+  { cat: "Демонтажные работы", name: "Демонтаж краски со стен", unit: "м²", pm: 120, pc: 150 },
+  { cat: "Демонтажные работы", name: "Демонтаж плитки со стен", unit: "м²", pm: 220, pc: 280 },
+  { cat: "Демонтажные работы", name: "Демонтаж плитки с пола", unit: "м²", pm: 200, pc: 260 },
+  { cat: "Демонтажные работы", name: "Демонтаж ламината/паркетной доски", unit: "м²", pm: 90, pc: 120 },
+  { cat: "Демонтажные работы", name: "Демонтаж линолеума", unit: "м²", pm: 70, pc: 90 },
+  { cat: "Демонтажные работы", name: "Демонтаж плинтуса", unit: "м.п.", pm: 60, pc: 80 },
+  { cat: "Демонтажные работы", name: "Демонтаж натяжного потолка", unit: "м²", pm: 120, pc: 160 },
+  { cat: "Демонтажные работы", name: "Демонтаж ГКЛ", unit: "м²", pm: 180, pc: 240 },
+  { cat: "Демонтажные работы", name: "Демонтаж перегородки", unit: "м²", pm: 350, pc: 450 },
+  { cat: "Демонтажные работы", name: "Демонтаж двери с коробкой", unit: "шт", pm: 450, pc: 600 },
+  { cat: "Демонтажные работы", name: "Снятие старой стяжки", unit: "м²", pm: 280, pc: 360 },
+  { cat: "Черновые работы", name: "Грунтовка стен/потолка", unit: "м²", pm: 70, pc: 90 },
+  { cat: "Черновые работы", name: "Штукатурка стен по маякам", unit: "м²", pm: 420, pc: 550 },
+  { cat: "Черновые работы", name: "Шпаклёвка стен под обои", unit: "м²", pm: 180, pc: 240 },
+  { cat: "Черновые работы", name: "Шпаклёвка стен под покраску", unit: "м²", pm: 280, pc: 360 },
+  { cat: "Черновые работы", name: "Стяжка пола полусухая", unit: "м²", pm: 420, pc: 550 },
+  { cat: "Черновые работы", name: "Наливной пол", unit: "м²", pm: 260, pc: 340 },
+  { cat: "Черновые работы", name: "Гидроизоляция", unit: "м²", pm: 220, pc: 290 },
+  { cat: "Черновые работы", name: "Перегородка из ГКЛ (1 слой)", unit: "м²", pm: 650, pc: 850 },
+  { cat: "Черновые работы", name: "Перегородка из ГКЛ (2 слоя)", unit: "м²", pm: 820, pc: 1080 },
+  { cat: "Электромонтаж", name: "Штробление (бетон)", unit: "м.п.", pm: 280, pc: 360 },
+  { cat: "Электромонтаж", name: "Прокладка кабеля", unit: "м.п.", pm: 90, pc: 120 },
+  { cat: "Электромонтаж", name: "Установка подрозетника (бетон)", unit: "шт", pm: 320, pc: 420 },
+  { cat: "Электромонтаж", name: "Монтаж розетки/выключателя", unit: "шт", pm: 220, pc: 290 },
+  { cat: "Электромонтаж", name: "Монтаж точки освещения", unit: "шт", pm: 380, pc: 500 },
+  { cat: "Электромонтаж", name: "Монтаж люстры", unit: "шт", pm: 550, pc: 720 },
+  { cat: "Электромонтаж", name: "Монтаж точечного светильника", unit: "шт", pm: 280, pc: 360 },
+  { cat: "Электромонтаж", name: "Сборка щита (до 12 мод.)", unit: "шт", pm: 3500, pc: 4600 },
+  { cat: "Электромонтаж", name: "Сборка щита (до 24 мод.)", unit: "шт", pm: 5500, pc: 7200 },
+  { cat: "Электромонтаж", name: "Монтаж тёплого пола", unit: "м²", pm: 380, pc: 500 },
+  { cat: "Сантехника", name: "Разводка труб ХВС/ГВС", unit: "точка", pm: 950, pc: 1250 },
+  { cat: "Сантехника", name: "Монтаж инсталляции унитаза", unit: "шт", pm: 2800, pc: 3700 },
+  { cat: "Сантехника", name: "Монтаж канализации", unit: "точка", pm: 650, pc: 860 },
+  { cat: "Потолки", name: "Натяжной потолок (простой)", unit: "м²", pm: 380, pc: 500 },
+  { cat: "Потолки", name: "Потолок из ГКЛ (1 уровень)", unit: "м²", pm: 680, pc: 900 },
+  { cat: "Потолки", name: "Покраска потолка", unit: "м²", pm: 280, pc: 360 },
+  { cat: "Стены", name: "Поклейка обоев", unit: "м²", pm: 280, pc: 360 },
+  { cat: "Стены", name: "Покраска стен", unit: "м²", pm: 240, pc: 320 },
+  { cat: "Полы", name: "Укладка ламината", unit: "м²", pm: 320, pc: 420 },
+  { cat: "Полы", name: "Укладка кварцвинила", unit: "м²", pm: 420, pc: 550 },
+  { cat: "Полы", name: "Установка плинтуса ПВХ", unit: "м.п.", pm: 120, pc: 160 },
+  { cat: "Плиточные работы", name: "Укладка плитки на стены", unit: "м²", pm: 880, pc: 1160 },
+  { cat: "Плиточные работы", name: "Укладка плитки на пол", unit: "м²", pm: 780, pc: 1020 },
+  { cat: "Плиточные работы", name: "Затирка швов эпоксидная", unit: "м²", pm: 380, pc: 500 },
+  { cat: "Двери", name: "Установка межкомнатной двери", unit: "шт", pm: 1800, pc: 2400 },
+  { cat: "Двери", name: "Установка входной двери", unit: "шт", pm: 2800, pc: 3700 },
+  { cat: "Чистовая сантехника", name: "Установка унитаза", unit: "шт", pm: 1400, pc: 1840 },
+  { cat: "Чистовая сантехника", name: "Установка ванны", unit: "шт", pm: 2200, pc: 2900 },
+  { cat: "Чистовая сантехника", name: "Установка раковины", unit: "шт", pm: 980, pc: 1280 },
+  { cat: "Чистовая сантехника", name: "Установка смесителя", unit: "шт", pm: 580, pc: 760 },
+  { cat: "Монтаж мебели", name: "Сборка кухни (м.п.)", unit: "м.п.", pm: 1400, pc: 1840 },
+  { cat: "Монтаж мебели", name: "Навеска полок/ТВ", unit: "шт", pm: 480, pc: 630 },
+  { cat: "Вывоз мусора", name: "Вывоз мусора (Газель)", unit: "рейс", pm: 3800, pc: 5000 },
+  { cat: "Вывоз мусора", name: "Уборка после ремонта", unit: "м²", pm: 120, pc: 160 },
+  { cat: "Организационные", name: "Выезд на замер", unit: "выезд", pm: 0, pc: 0 },
+];
+
+let state = { project: null, modalTarget: null, priceList: [], savedProjects: [] };
+const LS_PROJECTS = 'smeta_projects_v2';
+const LS_PRICE = 'smeta_price_v2';
+const LS_THEME = 'smeta_theme_v2';
+
+function init() {
+  const theme = localStorage.getItem(LS_THEME) || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  const savedPrice = localStorage.getItem(LS_PRICE);
+  state.priceList = savedPrice ? JSON.parse(savedPrice) : JSON.parse(JSON.stringify(DEFAULT_PRICE_LIST));
+  const saved = localStorage.getItem(LS_PROJECTS);
+  state.savedProjects = saved ? JSON.parse(saved) : [];
+  if (state.savedProjects.length > 0) {
+    loadProject(state.savedProjects[0].id);
+  } else {
+    newProject();
+  }
+  renderSavedList();
+  renderPriceList();
+  fillCategorySelects();
+}
+
+function newProject() {
+  state.project = {
+    id: 'p_' + Date.now(),
+    name: '',
+    client: { name: '', address: '', phone: '', date: new Date().toISOString().slice(0,10), markup: 0, complex: false },
+    rooms: [],
+    commonItems: []
+  };
+  loadProjectToForm();
+  renderRooms();
+  renderCommonItems();
+  renderEstimate();
+  renderSavedList();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  ['object','estimate','price'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = (t === tab) ? '' : 'none';
+  });
+  if (tab === 'estimate') renderEstimate();
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem(LS_THEME, next);
+}
+
+function loadProjectToForm() {
+  const p = state.project;
+  document.getElementById('projectName').value = p.name || '';
+  document.getElementById('clientName').value = p.client.name || '';
+  document.getElementById('clientAddress').value = p.client.address || '';
+  document.getElementById('clientPhone').value = p.client.phone || '';
+  document.getElementById('clientDate').value = p.client.date || '';
+  document.getElementById('clientMarkup').value = p.client.markup || 0;
+  document.getElementById('complexObject').checked = !!p.client.complex;
+}
+
+function readFormToProject() {
+  state.project.name = document.getElementById('projectName').value.trim();
+  state.project.client.name = document.getElementById('clientName').value.trim();
+  state.project.client.address = document.getElementById('clientAddress').value.trim();
+  state.project.client.phone = document.getElementById('clientPhone').value.trim();
+  state.project.client.date = document.getElementById('clientDate').value;
+  state.project.client.markup = parseFloat(document.getElementById('clientMarkup').value) || 0;
+  state.project.client.complex = document.getElementById('complexObject').checked;
+}
+
+function persistProjects() {
+  localStorage.setItem(LS_PROJECTS, JSON.stringify(state.savedProjects));
+}
+
+function saveProject() {
+  readFormToProject();
+  if (!state.project.name) { toast('Укажи название объекта', true); return; }
+  const idx = state.savedProjects.findIndex(p => p.id === state.project.id);
+  if (idx >= 0) state.savedProjects[idx] = JSON.parse(JSON.stringify(state.project));
+  else state.savedProjects.push(JSON.parse(JSON.stringify(state.project)));
+  persistProjects();
+  renderSavedList();
+  toast('Объект сохранён ✓');
+}
+
+function loadProject(id) {
+  const p = state.savedProjects.find(x => x.id === id);
+  if (!p) return;
+  state.project = JSON.parse(JSON.stringify(p));
+  loadProjectToForm();
+  renderRooms();
+  renderCommonItems();
+  renderEstimate();
+  renderSavedList();
+}
+
+function deleteProject(id, ev) {
+  ev.stopPropagation();
+  if (!confirm('Удалить объект?')) return;
+  state.savedProjects = state.savedProjects.filter(p => p.id !== id);
+  persistProjects();
+  if (state.project && state.project.id === id) newProject();
+  renderSavedList();
+  toast('Удалено');
+}
+
+function renderSavedList() {
+  const el = document.getElementById('savedList');
+  document.getElementById('savedCount').textContent = state.savedProjects.length > 0 ? `(${state.savedProjects.length})` : '';
+  if (state.savedProjects.length === 0) {
+    el.innerHTML = '<div class="empty">Сохранённых объектов пока нет</div>';
+    return;
+  }
+  el.innerHTML = state.savedProjects.map(p => {
+    const active = state.project && state.project.id === p.id ? 'active' : '';
+    const roomsCount = p.rooms ? p.rooms.length : 0;
+    const total = calcProjectTotal(p);
+    return `
+      <div class="saved-item ${active}" onclick="loadProject('${p.id}')">
+        <div class="info">
+          <div class="name">${escapeHtml(p.name || '(без названия)')}</div>
+          <div class="meta">${escapeHtml(p.client.address || '—')} · ${roomsCount} помещ. · ${formatMoney(total.client)}</div>
+        </div>
+        <div>
+          <button class="btn small danger" onclick="deleteProject('${p.id}', event)">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function addRoom() {
+  const name = prompt('Название помещения:', 'Комната');
+  if (!name) return;
+  const area = parseFloat(prompt('Площадь, м² (необязательно):', '0')) || 0;
+  state.project.rooms.push({ id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name, area, items: [] });
+  renderRooms();
+  renderEstimate();
+}
+
+function deleteRoom(id) {
+  if (!confirm('Удалить помещение?')) return;
+  state.project.rooms = state.project.rooms.filter(r => r.id !== id);
+  renderRooms();
+  renderEstimate();
+}
+
+function updateRoomField(id, field, value) {
+  const r = state.project.rooms.find(x => x.id === id);
+  if (!r) return;
+  if (field === 'name') r.name = value;
+  if (field === 'area') r.area = parseFloat(value) || 0;
+  renderEstimate();
+}
+
+function renderRooms() {
+  const el = document.getElementById('roomsList');
+  if (state.project.rooms.length === 0) {
+    el.innerHTML = '<div class="empty">Помещений пока нет</div>';
+    return;
+  }
+  el.innerHTML = state.project.rooms.map(r => {
+    const total = calcRoomTotal(r);
+    const itemsHtml = r.items.length === 0
+      ? '<div class="empty" style="padding:10px">Работы не добавлены</div>'
+      : `<div class="scroll-table"><table>
+          <thead><tr><th>Наименование</th><th>Кол-во</th><th>Ед.</th>
+          <th class="master-only">Цена мастеру</th><th>Цена клиенту</th>
+          <th class="master-only">Сумма мастер</th><th>Сумма клиент</th><th></th></tr></thead>
+          <tbody>${r.items.map((it, idx) => `
+            <tr>
+              <td>${escapeHtml(it.name)}</td>
+              <td><input type="number" step="0.01" value="${it.qty}" style="width:80px" onchange="updateItem('${r.id}', ${idx}, 'qty', this.value)"></td>
+              <td>${escapeHtml(it.unit)}</td>
+              <td class="master-only"><input type="number" value="${it.priceMaster}" style="width:90px" onchange="updateItem('${r.id}', ${idx}, 'priceMaster', this.value)"></td>
+              <td><input type="number" value="${it.priceClient}" style="width:90px" onchange="updateItem('${r.id}', ${idx}, 'priceClient', this.value)"></td>
+              <td class="master-only price-master">${formatMoney(it.qty * it.priceMaster)}</td>
+              <td class="price-client">${formatMoney(it.qty * it.priceClient)}</td>
+              <td><button class="btn small danger" onclick="deleteItem('${r.id}', ${idx})">✕</button></td>
+            </tr>`).join('')}</tbody></table></div>`;
+    return `
+      <div class="room">
+        <div class="room-header">
+          <div>
+            <div>🏠 <input type="text" value="${escapeHtml(r.name)}" style="display:inline-block;width:auto;font-weight:600;background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--text)" onchange="updateRoomField('${r.id}','name',this.value)"></div>
+            <div class="room-meta">Площадь: <input type="number" step="0.1" value="${r.area}" style="display:inline-block;width:80px;padding:2px 6px;font-size:12px" onchange="updateRoomField('${r.id}','area',this.value)"> м² · Итого: <span class="price-client">${formatMoney(total.client)}</span></div>
+          </div>
+          <div class="btn-row" style="margin:0">
+            <button class="btn" onclick="openPriceModal('${r.id}')">➕ Из прайса</button>
+            <button class="btn secondary" onclick="addCustomItem('${r.id}')">✏️ Своя работа</button>
+            <button class="btn danger" onclick="deleteRoom('${r.id}')">🗑</button>
+          </div>
+        </div>
+        ${itemsHtml}
+      </div>`;
+  }).join('');
+}
+
+function updateItem(roomId, idx, field, value) {
+  const r = state.project.rooms.find(x => x.id === roomId);
+  if (!r) return;
+  r.items[idx][field] = parseFloat(value) || 0;
+  renderRooms();
+  renderEstimate();
+}
+
+function deleteItem(roomId, idx) {
+  const r = state.project.rooms.find(x => x.id === roomId);
+  if (!r) return;
+  r.items.splice(idx, 1);
+  renderRooms();
+  renderEstimate();
+}
+
+function addCustomItem(roomId) {
+  const name = prompt('Наименование работы:');
+  if (!name) return;
+  const unit = prompt('Единица:', 'м²') || 'шт';
+  const pm = parseFloat(prompt('Цена мастеру, ₽:', '0')) || 0;
+  const pc = parseFloat(prompt('Цена клиенту, ₽:', '0')) || 0;
+  const qty = parseFloat(prompt('Количество:', '1')) || 1;
+  const r = state.project.rooms.find(x => x.id === roomId);
+  if (!r) return;
+  r.items.push({ cat: 'Своё', name, unit, qty, priceMaster: pm, priceClient: pc });
+  renderRooms();
+  renderEstimate();
+}
+
+function renderCommonItems() {
+  const el = document.getElementById('commonItemsList');
+  const items = state.project.commonItems || [];
+  if (items.length === 0) { el.innerHTML = '<div class="empty">Общие работы не добавлены</div>'; return; }
+  el.innerHTML = `<div class="scroll-table"><table>
+    <thead><tr><th>Наименование</th><th>Кол-во</th><th>Ед.</th>
+    <th class="master-only">Цена мастеру</th><th>Цена клиенту</th>
+    <th class="master-only">Сумма мастер</th><th>Сумма клиент</th><th></th></tr></thead>
+    <tbody>${items.map((it, idx) => `
+      <tr>
+        <td>${escapeHtml(it.name)}</td>
+        <td><input type="number" step="0.01" value="${it.qty}" style="width:80px" onchange="updateCommonItem(${idx}, 'qty', this.value)"></td>
+        <td>${escapeHtml(it.unit)}</td>
+        <td class="master-only"><input type="number" value="${it.priceMaster}" style="width:90px" onchange="updateCommonItem(${idx}, 'priceMaster', this.value)"></td>
+        <td><input type="number" value="${it.priceClient}" style="width:90px" onchange="updateCommonItem(${idx}, 'priceClient', this.value)"></td>
+        <td class="master-only price-master">${formatMoney(it.qty * it.priceMaster)}</td>
+        <td class="price-client">${formatMoney(it.qty * it.priceClient)}</td>
+        <td><button class="btn small danger" onclick="deleteCommonItem(${idx})">✕</button></td>
+      </tr>`).join('')}</tbody></table></div>`;
+}
+
+function updateCommonItem(idx, field, value) {
+  state.project.commonItems[idx][field] = parseFloat(value) || 0;
+  renderCommonItems();
+  renderEstimate();
+}
+
+function deleteCommonItem(idx) {
+  state.project.commonItems.splice(idx, 1);
+  renderCommonItems();
+  renderEstimate();
+}
+
+function fillCategorySelects() {
+  const cats = [...new Set(state.priceList.map(p => p.cat))].sort();
+  const html = '<option value="">Все разделы</option>' + cats.map(c => `<option>${escapeHtml(c)}</option>`).join('');
+  document.getElementById('priceCategory').innerHTML = html;
+  document.getElementById('modalCategory').innerHTML = html;
+}
+
+function renderPriceList() {
+  const search = document.getElementById('priceSearch').value.toLowerCase().trim();
+  const cat = document.getElementById('priceCategory').value;
+  const el = document.getElementById('priceList');
+  let list = state.priceList;
+  if (cat) list = list.filter(p => p.cat === cat);
+  if (search) list = list.filter(p => p.name.toLowerCase().includes(search) || p.cat.toLowerCase().includes(search));
+  if (list.length === 0) { el.innerHTML = '<div class="empty">Ничего не найдено</div>'; return; }
+  el.innerHTML = list.map(p => {
+    const realIdx = state.priceList.indexOf(p);
+    return `
+      <div class="price-item">
+        <div><div class="pname">${escapeHtml(p.name)}</div><div class="pcat">${escapeHtml(p.cat)}</div></div>
+        <div>${escapeHtml(p.unit)}</div>
+        <div><input type="number" value="${p.pm}" style="width:80px" onchange="updatePriceItem(${realIdx}, 'pm', this.value)"></div>
+        <div><input type="number" value="${p.pc}" style="width:90px" onchange="updatePriceItem(${realIdx}, 'pc', this.value)"></div>
+        <div><button class="btn small secondary" onclick="resetPriceItem(${realIdx})">↺</button></div>
+      </div>`;
+  }).join('');
+}
+
+function updatePriceItem(idx, field, value) {
+  state.priceList[idx][field] = parseFloat(value) || 0;
+  localStorage.setItem(LS_PRICE, JSON.stringify(state.priceList));
+}
+
+function resetPriceItem(idx) {
+  const def = DEFAULT_PRICE_LIST.find(d => d.cat === state.priceList[idx].cat && d.name === state.priceList[idx].name);
+  if (def) {
+    state.priceList[idx].pm = def.pm;
+    state.priceList[idx].pc = def.pc;
+    localStorage.setItem(LS_PRICE, JSON.stringify(state.priceList));
+    renderPriceList();
+  }
+}
+
+function resetPriceList() {
+  if (!confirm('Сбросить прайс?')) return;
+  state.priceList = JSON.parse(JSON.stringify(DEFAULT_PRICE_LIST));
+  localStorage.setItem(LS_PRICE, JSON.stringify(state.priceList));
+  renderPriceList();
+  fillCategorySelects();
+}
+
+function openPriceModal(target) {
+  state.modalTarget = target;
+  document.getElementById('modalSearch').value = '';
+  document.getElementById('modalCategory').value = '';
+  document.getElementById('priceModal').classList.add('show');
+  renderModalPriceList();
+}
+
+function closePriceModal() {
+  document.getElementById('priceModal').classList.remove('show');
+  state.modalTarget = null;
+}
+
+function renderModalPriceList() {
+  const search = document.getElementById('modalSearch').value.toLowerCase().trim();
+  const cat = document.getElementById('modalCategory').value;
+  const el = document.getElementById('modalPriceList');
+  let list = state.priceList;
+  if (cat) list = list.filter(p => p.cat === cat);
+  if (search) list = list.filter(p => p.name.toLowerCase().includes(search) || p.cat.toLowerCase().includes(search));
+  if (list.length === 0) { el.innerHTML = '<div class="empty">Ничего не найдено</div>'; return; }
+  el.innerHTML = list.map(p => `
+    <div class="price-item" style="cursor:pointer" onclick='addFromPrice(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
+      <div><div class="pname">${escapeHtml(p.name)}</div><div class="pcat">${escapeHtml(p.cat)}</div></div>
+      <div>${escapeHtml(p.unit)}</div>
+      <div class="price-master">${formatMoney(p.pm)}</div>
+      <div class="price-client">${formatMoney(p.pc)}</div>
+      <div><button class="btn small">➕</button></div>
+    </div>`).join('');
+}
+
+function addFromPrice(p) {
+  const qty = parseFloat(prompt(`Количество (${p.unit}):`, '1')) || 1;
+  const markup = state.project.client.markup || 0;
+  const complex = state.project.client.complex;
+  const pm = p.pm;
+  const pc = Math.round((complex ? p.pc : p.pc) * (1 + markup / 100));
+  const item = { cat: p.cat, name: p.name, unit: p.unit, qty, priceMaster: pm, priceClient: pc };
+  if (state.modalTarget === 'common') {
+    state.project.commonItems.push(item);
+    renderCommonItems();
+  } else {
+    const r = state.project.rooms.find(x => x.id === state.modalTarget);
+    if (r) r.items.push(item);
+    renderRooms();
+  }
+  renderEstimate();
+  toast('Добавлено ✓');
+}
+
+function calcRoomTotal(r) {
+  let master = 0, client = 0;
+  r.items.forEach(it => { master += it.qty * it.priceMaster; client += it.qty * it.priceClient; });
+  return { master, client };
+}
+
+function calcProjectTotal(p) {
+  let master = 0, client = 0;
+  (p.rooms || []).forEach(r => { const t = calcRoomTotal(r); master += t.master; client += t.client; });
+  (p.commonItems || []).forEach(it => { master += it.qty * it.priceMaster; client += it.qty * it.priceClient; });
+  return { master, client };
+}
+
+function renderEstimate() {
+  const p = state.project;
+  const body = document.getElementById('estimateBody');
+  document.getElementById('estimateTitle').textContent = 'Предварительная смета' + (p.client.name ? ' — ' + p.client.name : '');
+  const rows = [];
+  let n = 1;
+  (p.rooms || []).forEach(r => {
+    r.items.forEach(it => {
+      rows.push({ n: n++, cat: it.cat, name: it.name, room: r.name, qty: it.qty, unit: it.unit, pm: it.priceMaster, pc: it.priceClient, sm: it.qty * it.priceMaster, sc: it.qty * it.priceClient });
+    });
+  });
+  (p.commonItems || []).forEach(it => {
+    rows.push({ n: n++, cat: it.cat, name: it.name, room: '— общие —', qty: it.qty, unit: it.unit, pm: it.priceMaster, pc: it.priceClient, sm: it.qty * it.priceMaster, sc: it.qty * it.priceClient });
+  });
+  if (rows.length === 0) {
+    body.innerHTML = `<tr><td colspan="10" class="empty">Смета пуста</td></tr>`;
+  } else {
+    body.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.n}</td><td style="color:var(--text-dim);font-size:12px">${escapeHtml(r.cat)}</td>
+        <td>${escapeHtml(r.name)}</td><td style="color:var(--text-dim)">${escapeHtml(r.room)}</td>
+        <td>${r.qty}</td><td>${escapeHtml(r.unit)}</td>
+        <td class="master-only price-master">${formatMoney(r.pm)}</td>
+        <td class="price-client">${formatMoney(r.pc)}</td>
+        <td class="master-only price-master">${formatMoney(r.sm)}</td>
+        <td class="price-client">${formatMoney(r.sc)}</td>
+      </tr>`).join('');
+  }
+  const total = calcProjectTotal(p);
+  document.getElementById('totalMaster').textContent = formatMoney(total.master);
+  document.getElementById('totalClient').textContent = formatMoney(total.client);
+  document.getElementById('totalProfit').textContent = formatMoney(total.client - total.master);
+}
+
+function printEstimate() { readFormToProject(); window.print(); }
+
+function copyEstimateText() {
+  readFormToProject();
+  const p = state.project;
+  const lines = ['СМЕТА НА ОТДЕЛОЧНЫЕ РАБОТЫ', '================================'];
+  if (p.client.name) lines.push('Заказчик: ' + p.client.name);
+  if (p.client.address) lines.push('Адрес: ' + p.client.address);
+  if (p.client.phone) lines.push('Тел.: ' + p.client.phone);
+  lines.push('');
+  let total = 0, n = 1;
+  (p.rooms || []).forEach(r => {
+    if (r.items.length === 0) return;
+    lines.push('--- ' + r.name + ' ---');
+    r.items.forEach(it => { const sum = it.qty * it.priceClient; total += sum; lines.push(`${n}. ${it.name} — ${it.qty} ${it.unit} × ${it.priceClient} ₽ = ${sum} ₽`); n++; });
+    lines.push('');
+  });
+  if ((p.commonItems || []).length > 0) {
+    lines.push('--- Общие работы ---');
+    p.commonItems.forEach(it => { const sum = it.qty * it.priceClient; total += sum; lines.push(`${n}. ${it.name} — ${it.qty} ${it.unit} × ${it.priceClient} ₽ = ${sum} ₽`); n++; });
+  }
+  lines.push('================================', 'ИТОГО: ' + formatMoney(total), '', 'Материалы не включены.');
+  navigator.clipboard.writeText(lines.join('\n')).then(() => toast('Скопировано ✓'));
+}
+
+/* ========== ЭКСПОРТ / ИМПОРТ ========== */
+function exportBackup() {
+  readFormToProject();
+  // Обновим текущий проект в списке перед экспортом
+  const idx = state.savedProjects.findIndex(p => p.id === state.project.id);
+  if (idx >= 0) state.savedProjects[idx] = JSON.parse(JSON.stringify(state.project));
+  else if (state.project.name) state.savedProjects.push(JSON.parse(JSON.stringify(state.project)));
+
+  const data = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    projects: state.savedProjects,
+    priceList: state.priceList
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `smeta-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Резервная копия сохранена ✓');
+}
+
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.projects || !Array.isArray(data.projects)) throw new Error('Неверный формат');
+      const mode = confirm(`Найдено объектов: ${data.projects.length}.\n\nOK = ДОБАВИТЬ к существующим\nОтмена = ЗАМЕНИТЬ все объекты`);
+      if (mode) {
+        // Добавляем, пропуская дубликаты по id
+        const existingIds = new Set(state.savedProjects.map(p => p.id));
+        data.projects.forEach(p => { if (!existingIds.has(p.id)) state.savedProjects.push(p); });
+      } else {
+        state.savedProjects = data.projects;
+      }
+      if (data.priceList && Array.isArray(data.priceList)) {
+        state.priceList = data.priceList;
+        localStorage.setItem(LS_PRICE, JSON.stringify(state.priceList));
+        fillCategorySelects();
+        renderPriceList();
+      }
+      persistProjects();
+      if (state.savedProjects.length > 0) loadProject(state.savedProjects[0].id);
+      else newProject();
+      renderSavedList();
+      toast(`Импортировано: ${data.projects.length} объектов ✓`);
+    } catch (err) {
+      toast('Ошибка импорта: ' + err.message, true);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function formatMoney(v) { if (!isFinite(v)) v = 0; return Math.round(v).toLocaleString('ru-RU') + ' ₽'; }
+function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.getElementById('priceModal').addEventListener('click', (e) => { if (e.target.id === 'priceModal') closePriceModal(); });
+['clientName','clientAddress','clientPhone','clientDate','clientMarkup','projectName','complexObject'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => { readFormToProject(); renderSavedList(); });
+});
+
+init();
+</script>
+
+</body>
+</html>
