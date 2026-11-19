@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Владимир Отделка - Смета</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; padding: 20px; }
+.card { background: #2a2a2a; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+h1 { color: #f59e0b; margin-bottom: 20px; }
+h2 { color: #f59e0b; margin-bottom: 12px; font-size: 18px; }
+button { background: #f59e0b; color: #000; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; width: 100%; margin-top: 8px; }
+button:hover { background: #d97706; }
+input, select { width: 100%; padding: 10px; margin: 6px 0; background: #3a3a3a; border: 1px solid #555; color: #fff; border-radius: 6px; font-size: 14px; }
+label { display: block; margin-top: 10px; font-size: 13px; color: #aaa; }
+.room { background: #3a3a3a; padding: 12px; border-radius: 6px; margin: 10px 0; }
+.room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.room-title { font-weight: bold; font-size: 16px; }
+.room-meta { font-size: 12px; color: #aaa; margin-top: 4px; }
+.work { background: #4a4a4a; padding: 10px; border-radius: 6px; margin: 8px 0; }
+.work-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.work-name { font-weight: bold; font-size: 14px; }
+.work-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.work-fields input { margin: 0; }
+.totals { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #666; font-size: 13px; }
+.master { color: #f59e0b; font-weight: bold; }
+.client { color: #3b82f6; font-weight: bold; }
+.price-item { background: #3a3a3a; padding: 12px; border-radius: 6px; margin: 8px 0; cursor: pointer; }
+.price-item:hover { background: #4a4a4a; }
+.price-name { font-weight: bold; margin-bottom: 4px; }
+.price-cat { font-size: 11px; color: #aaa; }
+.price-row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; }
+.modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; padding: 20px; overflow-y: auto; }
+.modal.show { display: block; }
+.modal-content { background: #2a2a2a; max-width: 600px; margin: 20px auto; padding: 20px; border-radius: 8px; }
+.close { float: right; cursor: pointer; font-size: 24px; }
+.nav { display: flex; gap: 8px; margin-bottom: 20px; }
+.nav button { width: auto; flex: 1; }
+.nav button.active { background: #d97706; }
+.summary { background: #3a3a3a; padding: 16px; border-radius: 8px; margin-top: 16px; }
+.summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #555; }
+.summary-total { font-size: 18px; font-weight: bold; color: #f59e0b; margin-top: 12px; padding-top: 12px; border-top: 2px solid #f59e0b; }
+</style>
+</head>
+<body>
+
+<h1>🔨 Владимир Отделка ПИТЕР</h1>
+
+<div class="nav">
+  <button class="active" onclick="showTab('objects')">Объекты</button>
+  <button onclick="showTab('estimate')">Смета</button>
+  <button onclick="showTab('price')">Прайс</button>
+</div>
+
+<div id="tab-objects">
+  <div class="card">
+    <h2>🏢 Объекты</h2>
+    <button onclick="createObject()">➕ Новый объект</button>
+    <div id="objectsList" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="tab-estimate" style="display:none">
+  <div class="card">
+    <h2>📝 Данные объекта</h2>
+    <label>Название</label>
+    <input type="text" id="objName" placeholder="Попова 27, кв. 15">
+    <label>Адрес</label>
+    <input type="text" id="objAddress" placeholder="ул. Профессора Попова, 27">
+    <label>Заказчик</label>
+    <input type="text" id="objClient" placeholder="Иван Иванов">
+    <label>Телефон</label>
+    <input type="text" id="objPhone" placeholder="+7 (999) 000-00-00">
+    <button onclick="saveObject()">💾 Сохранить</button>
+  </div>
+  
+  <div class="card">
+    <h2>🏠 Помещения</h2>
+    <button onclick="addRoom()">➕ Добавить помещение</button>
+    <div id="roomsList" style="margin-top:12px"></div>
+  </div>
+  
+  <div class="card">
+    <h2>📊 Итого</h2>
+    <div id="summary"></div>
+    <button onclick="printKP()" style="margin-top:12px">🖨 Печать КП</button>
+    <button onclick="copyEstimate()" style="margin-top:8px">📋 Копировать</button>
+  </div>
+</div>
+
+<div id="tab-price" style="display:none">
+  <div class="card">
+    <h2>📖 Прайс-лист</h2>
+    <input type="text" id="priceSearch" placeholder="🔍 Поиск..." oninput="renderPrice()">
+    <div id="priceList" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div class="modal" id="priceModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">✕</span>
+    <h2>Выберите работу</h2>
+    <input type="text" id="modalSearch" placeholder="🔍 Поиск..." oninput="renderModalPrice()">
+    <div id="modalPriceList" style="margin-top:12px;max-height:60vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<script>
+const PRICE = [
+  {cat:"Демонтаж",name:"Демонтаж обоев",unit:"м²",pm:90,pc:110},
+  {cat:"Демонтаж",name:"Демонтаж плитки",unit:"м²",pm:220,pc:280},
+  {cat:"Демонтаж",name:"Демонтаж ламината",unit:"м²",pm:90,pc:120},
+  {cat:"Черновые",name:"Штукатурка стен",unit:"м²",pm:420,pc:550},
+  {cat:"Черновые",name:"Стяжка пола",unit:"м²",pm:420,pc:550},
+  {cat:"Электрика",name:"Прокладка кабеля",unit:"м.п.",pm:90,pc:120},
+  {cat:"Электрика",name:"Установка розетки",unit:"шт",pm:220,pc:290},
+  {cat:"Сантехника",name:"Разводка труб",unit:"точка",pm:950,pc:1250},
+  {cat:"Плитка",name:"Укладка плитки",unit:"м²",pm:880,pc:1160},
+  {cat:"Полы",name:"Укладка ламината",unit:"м²",pm:320,pc:420},
+  {cat:"Стены",name:"Поклейка обоев",unit:"м²",pm:280,pc:360},
+  {cat:"Потолки",name:"Натяжной потолок",unit:"м²",pm:380,pc:500},
+  {cat:"Двери",name:"Установка двери",unit:"шт",pm:1800,pc:2400},
+  {cat:"Сантехника",name:"Установка унитаза",unit:"шт",pm:1400,pc:1840},
+  {cat:"Сантехника",name:"Установка ванны",unit:"шт",pm:2200,pc:2900},
+];
+
+let state = {
+  objects: [],
+  currentId: null,
+  currentRoomId: null
+};
+
+function init() {
+  const saved = localStorage.getItem('vladimir_smeta');
+  if (saved) state = JSON.parse(saved);
+  renderObjects();
+  renderPrice();
+}
+
+function save() {
+  localStorage.setItem('vladimir_smeta', JSON.stringify(state));
+}
+
+function showTab(tab) {
+  ['objects','estimate','price'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab?'':'none';
+  });
+  document.querySelectorAll('.nav button').forEach((b,i) => {
+    b.classList.toggle('active', ['objects','estimate','price'][i]===tab);
+  });
+  if (tab==='estimate' && state.currentId) loadObject();
+}
+
+function createObject() {
+  const obj = {
+    id: Date.now(),
+    name: '',
+    address: '',
+    client: {name:'',phone:''},
+    rooms: []
+  };
+  state.objects.push(obj);
+  state.currentId = obj.id;
+  save();
+  showTab('estimate');
+  renderObjects();
+}
+
+function renderObjects() {
+  const el = document.getElementById('objectsList');
+  if (state.objects.length===0) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Объектов нет</p>';
+    return;
+  }
+  el.innerHTML = state.objects.map(o => {
+    const total = o.rooms.reduce((s,r) => s + r.items.reduce((s2,i) => s2 + i.qty*i.pc, 0), 0);
+    return `<div class="room" onclick="state.currentId=${o.id};showTab('estimate')" style="cursor:pointer">
+      <div style="font-weight:bold">${o.name||'Без названия'}</div>
+      <div style="font-size:12px;color:#aaa">${o.address||'—'} · ${o.rooms.length} помещ.</div>
+      <div style="color:#f59e0b;font-weight:bold;margin-top:4px">${total.toLocaleString()} ₽</div>
+    </div>`;
+  }).join('');
+}
+
+function loadObject() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  if (!obj) return;
+  document.getElementById('objName').value = obj.name;
+  document.getElementById('objAddress').value = obj.address;
+  document.getElementById('objClient').value = obj.client.name;
+  document.getElementById('objPhone').value = obj.client.phone;
+  renderRooms();
+  renderSummary();
+}
+
+function saveObject() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  if (!obj) return;
+  obj.name = document.getElementById('objName').value;
+  obj.address = document.getElementById('objAddress').value;
+  obj.client.name = document.getElementById('objClient').value;
+  obj.client.phone = document.getElementById('objPhone').value;
+  save();
+  alert('Сохранено ✓');
+}
+
+function addRoom() {
+  const name = prompt('Название помещения:');
+  if (!name) return;
+  const area = parseFloat(prompt('Площадь, м²:', '0')) || 0;
+  const obj = state.objects.find(o => o.id===state.currentId);
+  obj.rooms.push({id:Date.now(), name, area, items:[]});
+  save();
+  renderRooms();
+  renderSummary();
+}
+
+function renderRooms() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const el = document.getElementById('roomsList');
+  if (!obj || obj.rooms.length===0) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Помещений нет</p>';
+    return;
+  }
+  el.innerHTML = obj.rooms.map(r => {
+    const total = r.items.reduce((s,i) => s + i.qty*i.pc, 0);
+    return `<div class="room">
+      <div class="room-header">
+        <div>
+          <div class="room-title">🏠 ${r.name}</div>
+          <div class="room-meta">${r.area} м² · Итого: <span style="color:#3b82f6;font-weight:bold">${total.toLocaleString()} ₽</span></div>
+        </div>
+        <button onclick="deleteRoom(${r.id})" style="width:auto;background:#ef4444;color:#fff">🗑</button>
+      </div>
+      ${r.items.length===0?'<p style="color:#aaa;text-align:center;padding:10px">Работы не добавлены</p>':''}
+      ${r.items.map((it,idx) => `
+        <div class="work">
+          <div class="work-header">
+            <div class="work-name">${it.name}</div>
+            <button onclick="deleteItem(${r.id},${idx})" style="width:auto;padding:4px 8px;background:#ef4444;color:#fff;font-size:12px">✕</button>
+          </div>
+          <div class="work-fields">
+            <div><label style="font-size:11px">Кол-во</label><input type="number" value="${it.qty}" onchange="updateItem(${r.id},${idx},'qty',this.value)"></div>
+            <div><label style="font-size:11px">Цена мастеру</label><input type="number" value="${it.pm}" onchange="updateItem(${r.id},${idx},'pm',this.value)"></div>
+            <div><label style="font-size:11px">Цена клиенту</label><input type="number" value="${it.pc}" onchange="updateItem(${r.id},${idx},'pc',this.value)"></div>
+          </div>
+          <div class="totals">
+            <span class="master">Мастеру: ${(it.qty*it.pm).toLocaleString()} ₽</span>
+            <span class="client">Клиенту: ${(it.qty*it.pc).toLocaleString()} ₽</span>
+          </div>
+        </div>
+      `).join('')}
+      <button onclick="openPriceModal(${r.id})" style="margin-top:8px">➕ Добавить работу</button>
+    </div>`;
+  }).join('');
+}
+
+function updateItem(roomId, idx, field, value) {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const room = obj.rooms.find(r => r.id===roomId);
+  room.items[idx][field] = parseFloat(value)||0;
+  save();
+  renderRooms();
+  renderSummary();
+}
+
+function deleteItem(roomId, idx) {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const room = obj.rooms.find(r => r.id===roomId);
+  room.items.splice(idx, 1);
+  save();
+  renderRooms();
+  renderSummary();
+}
+
+function deleteRoom(roomId) {
+  if (!confirm('Удалить помещение?')) return;
+  const obj = state.objects.find(o => o.id===state.currentId);
+  obj.rooms = obj.rooms.filter(r => r.id!==roomId);
+  save();
+  renderRooms();
+  renderSummary();
+}
+
+function renderSummary() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const el = document.getElementById('summary');
+  if (!obj) { el.innerHTML=''; return; }
+  let master=0, client=0;
+  obj.rooms.forEach(r => r.items.forEach(i => { master+=i.qty*i.pm; client+=i.qty*i.pc; }));
+  el.innerHTML = `
+    <div class="summary-row"><span>Себестоимость:</span><span class="master">${master.toLocaleString()} ₽</span></div>
+    <div class="summary-row"><span>Клиенту:</span><span class="client">${client.toLocaleString()} ₽</span></div>
+    <div class="summary-total">Прибыль: ${(client-master).toLocaleString()} ₽</div>
+  `;
+}
+
+function renderPrice() {
+  const search = document.getElementById('priceSearch')?.value.toLowerCase()||'';
+  const el = document.getElementById('priceList');
+  const list = PRICE.filter(p => p.name.toLowerCase().includes(search) || p.cat.toLowerCase().includes(search));
+  el.innerHTML = list.map(p => `
+    <div class="price-item">
+      <div class="price-name">${p.name}</div>
+      <div class="price-cat">${p.cat} · ${p.unit}</div>
+      <div class="price-row">
+        <span class="master">Мастеру: ${p.pm} ₽</span>
+        <span class="client">Клиенту: ${p.pc} ₽</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openPriceModal(roomId) {
+  state.currentRoomId = roomId;
+  document.getElementById('priceModal').classList.add('show');
+  document.getElementById('modalSearch').value = '';
+  renderModalPrice();
+}
+
+function closeModal() {
+  document.getElementById('priceModal').classList.remove('show');
+}
+
+function renderModalPrice() {
+  const search = document.getElementById('modalSearch').value.toLowerCase();
+  const el = document.getElementById('modalPriceList');
+  const list = PRICE.filter(p => p.name.toLowerCase().includes(search) || p.cat.toLowerCase().includes(search));
+  el.innerHTML = list.map(p => `
+    <div class="price-item" onclick="addWork(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+      <div class="price-name">${p.name}</div>
+      <div class="price-cat">${p.cat} · ${p.unit}</div>
+      <div class="price-row">
+        <span class="master">Мастеру: ${p.pm} ₽</span>
+        <span class="client">Клиенту: ${p.pc} ₽</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addWork(p) {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const room = obj.rooms.find(r => r.id===state.currentRoomId);
+  room.items.push({name:p.name, unit:p.unit, qty:1, pm:p.pm, pc:p.pc});
+  save();
+  closeModal();
+  renderRooms();
+  renderSummary();
+}
+
+function printKP() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  if (!obj) return;
+  const w = window.open('', '_blank');
+  let html = `<html><head><title>КП</title><style>body{font-family:Arial;padding:40px}h1{color:#f59e0b}.room{margin:20px 0}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}.total{font-size:20px;font-weight:bold;color:#f59e0b;margin-top:20px}</style></head><body>`;
+  html += `<h1>🔨 Владимир Отделка ПИТЕР</h1><h2>Коммерческое предложение</h2>`;
+  html += `<p><b>Объект:</b> ${obj.name}</p><p><b>Адрес:</b> ${obj.address}</p><p><b>Заказчик:</b> ${obj.client.name}</p><p><b>Тел:</b> ${obj.client.phone}</p><hr>`;
+  let n=1, total=0;
+  obj.rooms.forEach(r => {
+    if (r.items.length===0) return;
+    html += `<div class="room"><h3>${r.name} (${r.area} м²)</h3><table><tr><th>№</th><th>Работа</th><th>Кол-во</th><th>Ед.</th><th>Цена</th><th>Сумма</th></tr>`;
+    r.items.forEach(i => {
+      const sum = i.qty*i.pc;
+      total += sum;
+      html += `<tr><td>${n++}</td><td>${i.name}</td><td>${i.qty}</td><td>${i.unit}</td><td>${i.pc} ₽</td><td><b>${sum.toLocaleString()} ₽</b></td></tr>`;
+    });
+    html += `</table></div>`;
+  });
+  html += `<div class="total">ИТОГО: ${total.toLocaleString()} ₽</div>`;
+  html += `<p style="margin-top:40px;color:#999">Материалы не включены. Прайс СПб 2026.</p>`;
+  html += `</body></html>`;
+  w.document.write(html);
+  w.document.close();
+  w.print();
+}
+
+function copyEstimate() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  if (!obj) return;
+  let text = `КП Владимир Отделка ПИТЕР\nОбъект: ${obj.name}\nАдрес: ${obj.address}\nЗаказчик: ${obj.client.name}\nТел: ${obj.client.phone}\n\n`;
+  let n=1, total=0;
+  obj.rooms.forEach(r => {
+    if (r.items.length===0) return;
+    text += `--- ${r.name} (${r.area} м²) ---\n`;
+    r.items.forEach(i => {
+      const sum = i.qty*i.pc;
+      total += sum;
+      text += `${n}. ${i.name} — ${i.qty} ${i.unit} × ${i.pc} ₽ = ${sum} ₽\n`;
+      n++;
+    });
+    text += '\n';
+  });
+  text += `ИТОГО: ${total.toLocaleString()} ₽`;
+  navigator.clipboard.writeText(text).then(() => alert('Скопировано ✓'));
+}
+
+init();
+</script>
+
+</body>
+</html>
