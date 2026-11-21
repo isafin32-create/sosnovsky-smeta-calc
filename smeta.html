@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Владимир Отделка - Смета</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #1a1a1a; color: #fff; padding: 20px; padding-bottom: 80px; }
+.card { background: #2a2a2a; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+h1 { color: #f59e0b; margin-bottom: 20px; font-size: 22px; }
+h2 { color: #f59e0b; margin-bottom: 12px; font-size: 18px; }
+h3 { color: #f59e0b; margin: 16px 0 8px; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 6px; }
+button { background: #f59e0b; color: #000; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; margin: 4px 2px; }
+button:hover { background: #d97706; }
+button.small { padding: 6px 10px; font-size: 12px; }
+button.danger { background: #ef4444; color: #fff; }
+button.secondary { background: #4a4a4a; color: #fff; }
+input, select { width: 100%; padding: 10px; margin: 6px 0; background: #3a3a3a; border: 1px solid #555; color: #fff; border-radius: 6px; font-size: 14px; }
+label { display: block; margin-top: 10px; font-size: 13px; color: #aaa; }
+.room { background: #3a3a3a; padding: 12px; border-radius: 6px; margin: 10px 0; }
+.room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+.room-title { font-weight: bold; font-size: 16px; }
+.room-meta { font-size: 12px; color: #aaa; margin-top: 4px; }
+.work { background: #4a4a4a; padding: 10px; border-radius: 6px; margin: 8px 0; }
+.work-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.work-name { font-weight: bold; font-size: 14px; flex: 1; }
+.work-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.work-fields input { margin: 0; padding: 8px; }
+.totals { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #666; font-size: 13px; }
+.master { color: #f59e0b; font-weight: bold; }
+.client { color: #3b82f6; font-weight: bold; }
+.nav { display: flex; gap: 8px; margin-bottom: 20px; position: sticky; top: 0; background: #1a1a1a; padding: 10px 0; z-index: 10; }
+.nav button { width: auto; flex: 1; margin: 0; }
+.nav button.active { background: #d97706; }
+
+/* Прайс */
+.category-block { background: #3a3a3a; border-radius: 8px; margin: 12px 0; overflow: hidden; }
+.category-header { background: #4a4a4a; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.category-title { font-weight: bold; font-size: 15px; color: #f59e0b; flex: 1; }
+.category-title-input { background: #2a2a2a; border: 1px solid #f59e0b; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 15px; font-weight: bold; width: 100%; max-width: 300px; }
+.position { padding: 10px 12px; border-bottom: 1px solid #555; display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; }
+.position:last-child { border-bottom: none; }
+.position-name { font-size: 14px; font-weight: 500; }
+.position-unit { font-size: 12px; color: #aaa; min-width: 40px; }
+.position input[type="number"] { width: 80px; padding: 6px 8px; margin: 0; font-size: 13px; }
+.position .pm { color: #f59e0b; }
+.position .pc { color: #3b82f6; }
+.position-actions { display: flex; gap: 4px; }
+
+.modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; padding: 20px; overflow-y: auto; }
+.modal.show { display: block; }
+.modal-content { background: #2a2a2a; max-width: 600px; margin: 20px auto; padding: 20px; border-radius: 8px; }
+.close { float: right; cursor: pointer; font-size: 24px; color: #aaa; }
+.close:hover { color: #fff; }
+
+.summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #555; }
+.summary-total { font-size: 18px; font-weight: bold; color: #f59e0b; margin-top: 12px; padding-top: 12px; border-top: 2px solid #f59e0b; }
+
+@media (max-width: 600px) {
+  .work-fields { grid-template-columns: 1fr 1fr; }
+  .position { grid-template-columns: 1fr; gap: 6px; }
+  .position input[type="number"] { width: 100%; }
+  .position-actions { justify-content: flex-end; }
+}
+</style>
+</head>
+<body>
+
+<h1>🔨 Владимир Отделка ПИТЕР</h1>
+
+<div class="nav">
+  <button class="active" onclick="showTab('objects')">Объекты</button>
+  <button onclick="showTab('estimate')">Смета</button>
+  <button onclick="showTab('price')">Прайс</button>
+</div>
+
+<div id="tab-objects">
+  <div class="card">
+    <h2>🏢 Объекты</h2>
+    <button onclick="createObject()">➕ Новый объект</button>
+    <div id="objectsList" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="tab-estimate" style="display:none">
+  <div class="card">
+    <h2>📝 Данные объекта</h2>
+    <label>Название</label>
+    <input type="text" id="objName" placeholder="Попова 27, кв. 15">
+    <label>Адрес</label>
+    <input type="text" id="objAddress" placeholder="ул. Профессора Попова, 27">
+    <label>Заказчик</label>
+    <input type="text" id="objClient" placeholder="Иван Иванов">
+    <label>Телефон</label>
+    <input type="text" id="objPhone" placeholder="+7 (999) 000-00-00">
+    <button onclick="saveObject()">💾 Сохранить</button>
+  </div>
+  
+  <div class="card">
+    <h2>🏠 Помещения</h2>
+    <button onclick="addRoom()">➕ Добавить помещение</button>
+    <div id="roomsList" style="margin-top:12px"></div>
+  </div>
+  
+  <div class="card">
+    <h2>📊 Итого</h2>
+    <div id="summary"></div>
+    <button onclick="printKP()" style="margin-top:12px">🖨 Печать КП</button>
+    <button onclick="copyEstimate()" class="secondary">📋 Копировать</button>
+  </div>
+</div>
+
+<div id="tab-price" style="display:none">
+  <div class="card">
+    <h2>📖 Прайс-лист</h2>
+    <p style="color:#aaa;font-size:13px;margin-bottom:12px">
+      💡 Цены редактируются прямо в списке. Разделы можно переименовывать, добавлять и удалять.
+    </p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <button onclick="addCategory()">➕ Новый раздел</button>
+      <button onclick="resetPrice()" class="secondary">↺ Сбросить к стандартному</button>
+    </div>
+    <input type="text" id="priceSearch" placeholder="🔍 Поиск по названию..." oninput="renderPrice()">
+    <div id="priceList" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- Модалка добавления работы в смету -->
+<div class="modal" id="priceModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">✕</span>
+    <h2>Выберите работу из прайса</h2>
+    <p style="color:#aaa;font-size:13px;margin:8px 0">Клик по работе — сразу добавит её. Количество = 1, меняйте в карточке.</p>
+    <input type="text" id="modalSearch" placeholder="🔍 Поиск..." oninput="renderModalPrice()">
+    <div id="modalPriceList" style="margin-top:12px;max-height:60vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<script>
+// ===== ПОЛНЫЙ ПРАЙС-ЛИСТ =====
+const DEFAULT_PRICE = [
+  {cat:"Демонтажные работы",name:"Демонтаж обоев",unit:"м²",pm:90,pc:110},
+  {cat:"Демонтажные работы",name:"Демонтаж краски со стен",unit:"м²",pm:120,pc:150},
+  {cat:"Демонтажные работы",name:"Демонтаж плитки со стен",unit:"м²",pm:220,pc:280},
+  {cat:"Демонтажные работы",name:"Демонтаж плитки с пола",unit:"м²",pm:200,pc:260},
+  {cat:"Демонтажные работы",name:"Демонтаж ламината/паркетной доски",unit:"м²",pm:90,pc:120},
+  {cat:"Демонтажные работы",name:"Демонтаж линолеума",unit:"м²",pm:70,pc:90},
+  {cat:"Демонтажные работы",name:"Демонтаж плинтуса",unit:"м.п.",pm:60,pc:80},
+  {cat:"Демонтажные работы",name:"Демонтаж натяжного потолка",unit:"м²",pm:120,pc:160},
+  {cat:"Демонтажные работы",name:"Демонтаж ГКЛ (стены/потолок)",unit:"м²",pm:180,pc:240},
+  {cat:"Демонтажные работы",name:"Демонтаж перегородки (кирпич/блок)",unit:"м²",pm:350,pc:450},
+  {cat:"Демонтажные работы",name:"Демонтаж двери с коробкой",unit:"шт",pm:450,pc:600},
+  {cat:"Демонтажные работы",name:"Снятие старой стяжки (до 5 см)",unit:"м²",pm:280,pc:360},
+  {cat:"Демонтажные работы",name:"Демонтаж штукатурки",unit:"м²",pm:180,pc:240},
+  
+  {cat:"Черновые работы",name:"Грунтовка стен/потолка",unit:"м²",pm:70,pc:90},
+  {cat:"Черновые работы",name:"Грунтовка «Бетоноконтакт»",unit:"м²",pm:90,pc:120},
+  {cat:"Черновые работы",name:"Штукатурка стен по маякам (до 3 см)",unit:"м²",pm:420,pc:550},
+  {cat:"Черновые работы",name:"Штукатурка стен «под правило»",unit:"м²",pm:320,pc:420},
+  {cat:"Черновые работы",name:"Штукатурка откосов",unit:"м.п.",pm:280,pc:360},
+  {cat:"Черновые работы",name:"Шпаклёвка стен под обои",unit:"м²",pm:180,pc:240},
+  {cat:"Черновые работы",name:"Шпаклёвка стен под покраску (финиш)",unit:"м²",pm:280,pc:360},
+  {cat:"Черновые работы",name:"Шпаклёвка потолка",unit:"м²",pm:320,pc:420},
+  {cat:"Черновые работы",name:"Стяжка пола полусухая (до 5 см)",unit:"м²",pm:420,pc:550},
+  {cat:"Черновые работы",name:"Стяжка пола ЦПС (до 5 см)",unit:"м²",pm:380,pc:500},
+  {cat:"Черновые работы",name:"Наливной пол (самовыравнивающийся)",unit:"м²",pm:260,pc:340},
+  {cat:"Черновые работы",name:"Гидроизоляция обмазочная (санузлы)",unit:"м²",pm:220,pc:290},
+  {cat:"Черновые работы",name:"Устройство перегородки из ГКЛ (1 слой)",unit:"м²",pm:650,pc:850},
+  {cat:"Черновые работы",name:"Устройство перегородки из ГКЛ (2 слоя)",unit:"м²",pm:820,pc:1080},
+  {cat:"Черновые работы",name:"Обшивка стен ГКЛ по каркасу",unit:"м²",pm:380,pc:500},
+  {cat:"Черновые работы",name:"Обшивка потолка ГКЛ",unit:"м²",pm:480,pc:630},
+  
+  {cat:"Электромонтажные работы",name:"Штробление стены под кабель (кирпич/бетон)",unit:"м.п.",pm:280,pc:360},
+  {cat:"Электромонтажные работы",name:"Штробление стены под кабель (ГКЛ/газобетон)",unit:"м.п.",pm:180,pc:240},
+  {cat:"Электромонтажные работы",name:"Прокладка кабеля в штробе",unit:"м.п.",pm:90,pc:120},
+  {cat:"Электромонтажные работы",name:"Прокладка кабеля в гофре/трубе",unit:"м.п.",pm:110,pc:150},
+  {cat:"Электромонтажные работы",name:"Установка подрозетника (бетон)",unit:"шт",pm:320,pc:420},
+  {cat:"Электромонтажные работы",name:"Установка подрозетника (ГКЛ/дерево)",unit:"шт",pm:220,pc:290},
+  {cat:"Электромонтажные работы",name:"Монтаж розетки/выключателя",unit:"шт",pm:220,pc:290},
+  {cat:"Электромонтажные работы",name:"Монтаж точки освещения",unit:"шт",pm:380,pc:500},
+  {cat:"Электромонтажные работы",name:"Монтаж люстры (простая)",unit:"шт",pm:550,pc:720},
+  {cat:"Электромонтажные работы",name:"Монтаж люстры (сложная)",unit:"шт",pm:1200,pc:1600},
+  {cat:"Электромонтажные работы",name:"Монтаж точечного светильника",unit:"шт",pm:280,pc:360},
+  {cat:"Электромонтажные работы",name:"Монтаж LED-ленты",unit:"м.п.",pm:220,pc:290},
+  {cat:"Электромонтажные работы",name:"Сборка щита (до 12 модулей)",unit:"шт",pm:3500,pc:4600},
+  {cat:"Электромонтажные работы",name:"Сборка щита (до 24 модулей)",unit:"шт",pm:5500,pc:7200},
+  {cat:"Электромонтажные работы",name:"Установка автомата/УЗО",unit:"шт",pm:280,pc:360},
+  {cat:"Электромонтажные работы",name:"Подключение электроплиты/варочной",unit:"шт",pm:900,pc:1200},
+  {cat:"Электромонтажные работы",name:"Монтаж тёплого пола (кабель/маты)",unit:"м²",pm:380,pc:500},
+  
+  {cat:"Сантехнические работы (черновые)",name:"Разводка труб ХВС/ГВС (полипропилен)",unit:"точка",pm:950,pc:1250},
+  {cat:"Сантехнические работы (черновые)",name:"Разводка труб (сшитый полиэтилен)",unit:"точка",pm:1200,pc:1580},
+  {cat:"Сантехнические работы (черновые)",name:"Установка коллектора (группа)",unit:"шт",pm:1800,pc:2400},
+  {cat:"Сантехнические работы (черновые)",name:"Монтаж инсталляции унитаза",unit:"шт",pm:2800,pc:3700},
+  {cat:"Сантехнические работы (черновые)",name:"Монтаж канализации (точка)",unit:"точка",pm:650,pc:860},
+  {cat:"Сантехнические работы (черновые)",name:"Штробление под трубы (бетон)",unit:"м.п.",pm:320,pc:420},
+  {cat:"Сантехнические работы (черновые)",name:"Установка счётчиков воды",unit:"шт",pm:750,pc:980},
+  
+  {cat:"Малярные работы (стены и потолки)",name:"Покраска потолка (2 слоя)",unit:"м²",pm:280,pc:360},
+  {cat:"Малярные работы (стены и потолки)",name:"Поклейка потолочного плинтуса",unit:"м.п.",pm:160,pc:210},
+  {cat:"Малярные работы (стены и потолки)",name:"Поклейка обоев (простые)",unit:"м²",pm:280,pc:360},
+  {cat:"Малярные работы (стены и потолки)",name:"Поклейка обоев (флизелин под покраску)",unit:"м²",pm:320,pc:420},
+  {cat:"Малярные работы (стены и потолки)",name:"Поклейка обоев (с подбором рисунка)",unit:"м²",pm:380,pc:500},
+  {cat:"Малярные работы (стены и потолки)",name:"Покраска стен (2 слоя)",unit:"м²",pm:240,pc:320},
+  {cat:"Малярные работы (стены и потолки)",name:"Покраска стен декоративная",unit:"м²",pm:680,pc:900},
+  {cat:"Малярные работы (стены и потолки)",name:"Декоративная штукатурка",unit:"м²",pm:580,pc:760},
+  
+  {cat:"Плиточные работы",name:"Укладка плитки на стены (стандарт до 30×60)",unit:"м²",pm:880,pc:1160},
+  {cat:"Плиточные работы",name:"Укладка плитки на стены (крупноформат)",unit:"м²",pm:1280,pc:1680},
+  {cat:"Плиточные работы",name:"Укладка плитки на пол",unit:"м²",pm:780,pc:1020},
+  {cat:"Плиточные работы",name:"Укладка мозаики",unit:"м²",pm:1480,pc:1940},
+  {cat:"Плиточные работы",name:"Укладка керамогранита крупноформатного",unit:"м²",pm:1480,pc:1940},
+  {cat:"Плиточные работы",name:"Затирка швов (обычная)",unit:"м²",pm:120,pc:160},
+  {cat:"Плиточные работы",name:"Затирка швов эпоксидная",unit:"м²",pm:380,pc:500},
+  {cat:"Плиточные работы",name:"Подрезка плитки под 45° (заусовка)",unit:"м.п.",pm:480,pc:630},
+  {cat:"Плиточные работы",name:"Устройство короба ГКЛ (стояки)",unit:"м.п.",pm:580,pc:760},
+  
+  {cat:"Работы по полам",name:"Укладка ламината (прямая)",unit:"м²",pm:320,pc:420},
+  {cat:"Работы по полам",name:"Укладка ламината (диагональ)",unit:"м²",pm:420,pc:550},
+  {cat:"Работы по полам",name:"Укладка подложки",unit:"м²",pm:70,pc:90},
+  {cat:"Работы по полам",name:"Укладка паркетной доски",unit:"м²",pm:480,pc:630},
+  {cat:"Работы по полам",name:"Укладка кварцвинила (клеевой)",unit:"м²",pm:420,pc:550},
+  {cat:"Работы по полам",name:"Укладка кварцвинила (замковый)",unit:"м²",pm:380,pc:500},
+  {cat:"Работы по полам",name:"Укладка линолеума",unit:"м²",pm:220,pc:290},
+  {cat:"Работы по полам",name:"Установка плинтуса ПВХ",unit:"м.п.",pm:120,pc:160},
+  {cat:"Работы по полам",name:"Установка плинтуса МДФ",unit:"м.п.",pm:180,pc:240},
+  {cat:"Работы по полам",name:"Монтаж порожка",unit:"шт",pm:220,pc:290},
+  
+  {cat:"Потолочные работы",name:"Потолок натяжной (простой)",unit:"м²",pm:380,pc:500},
+  {cat:"Потолочные работы",name:"Потолок натяжной (сложный)",unit:"м²",pm:580,pc:760},
+  {cat:"Потолочные работы",name:"Потолок натяжной парящий",unit:"м²",pm:780,pc:1020},
+  {cat:"Потолочные работы",name:"Потолок из ГКЛ (1 уровень)",unit:"м²",pm:680,pc:900},
+  {cat:"Потолочные работы",name:"Потолок из ГКЛ (2 уровня)",unit:"м²",pm:980,pc:1280},
+  
+  {cat:"Дверные работы",name:"Установка межкомнатной двери",unit:"шт",pm:1800,pc:2400},
+  {cat:"Дверные работы",name:"Установка скрытой двери",unit:"шт",pm:3800,pc:5000},
+  {cat:"Дверные работы",name:"Установка входной двери",unit:"шт",pm:2800,pc:3700},
+  {cat:"Дверные работы",name:"Демонтаж старой двери",unit:"шт",pm:380,pc:500},
+  {cat:"Дверные работы",name:"Установка доборов/наличников",unit:"шт",pm:480,pc:630},
+  
+  {cat:"Сантехника (чистовая)",name:"Установка унитаза (напольный)",unit:"шт",pm:1400,pc:1840},
+  {cat:"Сантехника (чистовая)",name:"Установка унитаза (подвесной)",unit:"шт",pm:1800,pc:2400},
+  {cat:"Сантехника (чистовая)",name:"Установка раковины",unit:"шт",pm:980,pc:1280},
+  {cat:"Сантехника (чистовая)",name:"Установка ванны (акрил/сталь)",unit:"шт",pm:2200,pc:2900},
+  {cat:"Сантехника (чистовая)",name:"Установка ванны чугунной",unit:"шт",pm:3200,pc:4200},
+  {cat:"Сантехника (чистовая)",name:"Установка душевой кабины",unit:"шт",pm:2800,pc:3700},
+  {cat:"Сантехника (чистовая)",name:"Установка смесителя",unit:"шт",pm:580,pc:760},
+  {cat:"Сантехника (чистовая)",name:"Установка полотенцесушителя",unit:"шт",pm:1400,pc:1840},
+  {cat:"Сантехника (чистовая)",name:"Установка стиральной машины",unit:"шт",pm:980,pc:1280},
+  {cat:"Сантехника (чистовая)",name:"Установка посудомоечной машины",unit:"шт",pm:1200,pc:1580},
+  {cat:"Сантехника (чистовая)",name:"Установка водонагревателя",unit:"шт",pm:1400,pc:1840},
+  
+  {cat:"Монтаж мебели",name:"Сборка кухни (за пог.м)",unit:"м.п.",pm:1400,pc:1840},
+  {cat:"Монтаж мебели",name:"Установка кухонной столешницы",unit:"м.п.",pm:680,pc:900},
+  {cat:"Монтаж мебели",name:"Сборка шкафа-купе",unit:"шт",pm:2400,pc:3200},
+  {cat:"Монтаж мебели",name:"Навеска полок / зеркала / ТВ",unit:"шт",pm:480,pc:630},
+  {cat:"Монтаж мебели",name:"Установка карниза для штор",unit:"шт",pm:380,pc:500},
+  {cat:"Монтаж мебели",name:"Врезка мойки в столешницу",unit:"шт",pm:780,pc:1020},
+  {cat:"Монтаж мебели",name:"Врезка варочной панели",unit:"шт",pm:680,pc:900},
+  
+  {cat:"Окна и откосы",name:"Монтаж откосов из ГКЛ",unit:"м.п.",pm:380,pc:500},
+  {cat:"Окна и откосы",name:"Монтаж откосов из сэндвич-панелей",unit:"м.п.",pm:480,pc:630},
+  {cat:"Окна и откосы",name:"Установка подоконника (ПВХ)",unit:"м.п.",pm:380,pc:500},
+  
+  {cat:"Вывоз мусора и логистика",name:"Подъём стройматериалов (мешок, этаж)",unit:"шт",pm:90,pc:120},
+  {cat:"Вывоз мусора и логистика",name:"Спуск мусора (мешок, этаж)",unit:"шт",pm:90,pc:120},
+  {cat:"Вывоз мусора и логистика",name:"Работа грузчика (час)",unit:"ч",pm:450,pc:600},
+  {cat:"Вывоз мусора и логистика",name:"Вывоз мусора (Газель)",unit:"рейс",pm:3800,pc:5000},
+  {cat:"Вывоз мусора и логистика",name:"Заказ контейнера 8 м³",unit:"рейс",pm:6500,pc:8600},
+  {cat:"Вывоз мусора и логистика",name:"Уборка после ремонта",unit:"м²",pm:120,pc:160},
+  
+  {cat:"Организационные",name:"Выезд мастера на замер",unit:"выезд",pm:0,pc:0},
+  {cat:"Организационные",name:"Составление сметы",unit:"объект",pm:0,pc:0},
+];
+
+let state = {
+  objects: [],
+  currentId: null,
+  currentRoomId: null,
+  priceList: []
+};
+
+function init() {
+  const saved = localStorage.getItem('vladimir_smeta_v2');
+  if (saved) {
+    const data = JSON.parse(saved);
+    state.objects = data.objects || [];
+    state.priceList = data.priceList || JSON.parse(JSON.stringify(DEFAULT_PRICE));
+  } else {
+    state.priceList = JSON.parse(JSON.stringify(DEFAULT_PRICE));
+  }
+  renderObjects();
+  renderPrice();
+}
+
+function save() {
+  localStorage.setItem('vladimir_smeta_v2', JSON.stringify({
+    objects: state.objects,
+    priceList: state.priceList
+  }));
+}
+
+function showTab(tab) {
+  ['objects','estimate','price'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===tab?'':'none';
+  });
+  document.querySelectorAll('.nav button').forEach((b,i) => {
+    b.classList.toggle('active', ['objects','estimate','price'][i]===tab);
+  });
+  if (tab==='estimate' && state.currentId) loadObject();
+  if (tab==='price') renderPrice();
+}
+
+// ===== ОБЪЕКТЫ =====
+function createObject() {
+  const obj = { id: Date.now(), name: '', address: '', client: {name:'',phone:''}, rooms: [] };
+  state.objects.push(obj);
+  state.currentId = obj.id;
+  save();
+  showTab('estimate');
+  renderObjects();
+}
+
+function renderObjects() {
+  const el = document.getElementById('objectsList');
+  if (state.objects.length===0) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Объектов нет</p>';
+    return;
+  }
+  el.innerHTML = state.objects.map(o => {
+    const total = o.rooms.reduce((s,r) => s + r.items.reduce((s2,i) => s2 + i.qty*i.pc, 0), 0);
+    return `<div class="room" onclick="state.currentId=${o.id};showTab('estimate')" style="cursor:pointer">
+      <div style="font-weight:bold">${o.name||'Без названия'}</div>
+      <div style="font-size:12px;color:#aaa">${o.address||'—'} · ${o.rooms.length} помещ.</div>
+      <div style="color:#f59e0b;font-weight:bold;margin-top:4px">${total.toLocaleString()} ₽</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== СМЕТА =====
+function loadObject() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  if (!obj) return;
+  document.getElementById('objName').value = obj.name;
+  document.getElementById('objAddress').value = obj.address;
+  document.getElementById('objClient').value = obj.client.name;
+  document.getElementById('objPhone').value = obj.client.phone;
+  renderRooms();
+  renderSummary();
+}
+
+function saveObject() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  if (!obj) return;
+  obj.name = document.getElementById('objName').value;
+  obj.address = document.getElementById('objAddress').value;
+  obj.client.name = document.getElementById('objClient').value;
+  obj.client.phone = document.getElementById('objPhone').value;
+  save();
+  alert('Сохранено ✓');
+}
+
+function addRoom() {
+  const name = prompt('Название помещения:');
+  if (!name) return;
+  const area = parseFloat(prompt('Площадь, м²:', '0')) || 0;
+  const obj = state.objects.find(o => o.id===state.currentId);
+  obj.rooms.push({id:Date.now(), name, area, items:[]});
+  save();
+  renderRooms();
+  renderSummary();
+}
+
+function renderRooms() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const el = document.getElementById('roomsList');
+  if (!obj || obj.rooms.length===0) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Помещений нет</p>';
+    return;
+  }
+  el.innerHTML = obj.rooms.map(r => {
+    const total = r.items.reduce((s,i) => s + i.qty*i.pc, 0);
+    return `<div class="room">
+      <div class="room-header">
+        <div>
+          <div class="room-title">🏠 ${r.name}</div>
+          <div class="room-meta">${r.area} м² · Итого: <span style="color:#3b82f6;font-weight:bold">${total.toLocaleString()} ₽</span></div>
+        </div>
+        <button onclick="deleteRoom(${r.id})" class="danger small">🗑</button>
+      </div>
+      ${r.items.length===0?'<p style="color:#aaa;text-align:center;padding:10px">Работы не добавлены</p>':''}
+      ${r.items.map((it,idx) => `
+        <div class="work">
+          <div class="work-header">
+            <div class="work-name">${it.name}</div>
+            <button onclick="deleteItem(${r.id},${idx})" class="danger small">✕</button>
+          </div>
+          <div class="work-fields">
+            <div><label style="font-size:11px">Кол-во</label><input type="number" step="0.01" value="${it.qty}" onchange="updateItem(${r.id},${idx},'qty',this.value)"></div>
+            <div><label style="font-size:11px">Цена мастеру</label><input type="number" value="${it.pm}" onchange="updateItem(${r.id},${idx},'pm',this.value)"></div>
+            <div><label style="font-size:11px">Цена клиенту</label><input type="number" value="${it.pc}" onchange="updateItem(${r.id},${idx},'pc',this.value)"></div>
+          </div>
+          <div class="totals">
+            <span class="master">Мастеру: ${(it.qty*it.pm).toLocaleString()} ₽</span>
+            <span class="client">Клиенту: ${(it.qty*it.pc).toLocaleString()} ₽</span>
+          </div>
+        </div>
+      `).join('')}
+      <button onclick="openPriceModal(${r.id})" style="margin-top:8px">➕ Добавить работу из прайса</button>
+    </div>`;
+  }).join('');
+}
+
+function updateItem(roomId, idx, field, value) {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const room = obj.rooms.find(r => r.id===roomId);
+  room.items[idx][field] = parseFloat(value)||0;
+  save();
+  renderRooms();
+  renderSummary();
+}
+
+function deleteItem(roomId, idx) {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const room = obj.rooms.find(r => r.id===roomId);
+  room.items.splice(idx, 1);
+  save();
+  renderRooms();
+  renderSummary();
+}
+
+function deleteRoom(roomId) {
+  if (!confirm('Удалить помещение?')) return;
+  const obj = state.objects.find(o => o.id===state.currentId);
+  obj.rooms = obj.rooms.filter(r => r.id!==roomId);
+  save();
+  renderRooms();
+  renderSummary();
+}
+
+function renderSummary() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const el = document.getElementById('summary');
+  if (!obj) { el.innerHTML=''; return; }
+  let master=0, client=0;
+  obj.rooms.forEach(r => r.items.forEach(i => { master+=i.qty*i.pm; client+=i.qty*i.pc; }));
+  el.innerHTML = `
+    <div class="summary-row"><span>Себестоимость:</span><span class="master">${master.toLocaleString()} ₽</span></div>
+    <div class="summary-row"><span>Клиенту:</span><span class="client">${client.toLocaleString()} ₽</span></div>
+    <div class="summary-total">Прибыль: ${(client-master).toLocaleString()} ₽</div>
+  `;
+}
+
+// ===== ПРАЙС-ЛИСТ С РАЗДЕЛАМИ =====
+function getCategories() {
+  const cats = [];
+  state.priceList.forEach(p => {
+    if (!cats.includes(p.cat)) cats.push(p.cat);
+  });
+  return cats;
+}
+
+function renderPrice() {
+  const search = document.getElementById('priceSearch')?.value.toLowerCase()||'';
+  const el = document.getElementById('priceList');
+  const categories = getCategories();
+  
+  if (categories.length===0) {
+    el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px">Разделов нет. Нажмите "Новый раздел".</p>';
+    return;
+  }
+  
+  el.innerHTML = categories.map(cat => {
+    let positions = state.priceList.filter(p => p.cat===cat);
+    if (search) {
+      positions = positions.filter(p => p.name.toLowerCase().includes(search) || p.cat.toLowerCase().includes(search));
+    }
+    if (positions.length===0 && search) return '';
+    
+    return `
+      <div class="category-block">
+        <div class="category-header">
+          <div class="category-title" id="catTitle_${cat.replace(/[^a-zA-Zа-яА-Я0-9]/g,'_')}">${cat}</div>
+          <div>
+            <button onclick="renameCategory('${cat.replace(/'/g,"\\'")}')" class="small secondary">✏️ Переименовать</button>
+            <button onclick="addPosition('${cat.replace(/'/g,"\\'")}')" class="small">➕ Позиция</button>
+            <button onclick="deleteCategory('${cat.replace(/'/g,"\\'")}')" class="small danger">🗑 Раздел</button>
+          </div>
+        </div>
+        ${positions.map(p => {
+          const idx = state.priceList.indexOf(p);
+          return `
+            <div class="position">
+              <div class="position-name">${p.name}</div>
+              <div class="position-unit">${p.unit}</div>
+              <input type="number" class="pm" value="${p.pm}" title="Цена мастеру" onchange="updatePrice(${idx},'pm',this.value)">
+              <input type="number" class="pc" value="${p.pc}" title="Цена клиенту" onchange="updatePrice(${idx},'pc',this.value)">
+              <div class="position-actions">
+                <button onclick="deletePosition(${idx})" class="small danger">✕</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+function updatePrice(idx, field, value) {
+  state.priceList[idx][field] = parseFloat(value)||0;
+  save();
+}
+
+function deletePosition(idx) {
+  if (!confirm('Удалить позицию?')) return;
+  state.priceList.splice(idx, 1);
+  save();
+  renderPrice();
+}
+
+function addPosition(cat) {
+  const name = prompt('Название работы:');
+  if (!name) return;
+  const unit = prompt('Единица измерения (м², м.п., шт и т.п.):', 'м²') || 'шт';
+  const pm = parseFloat(prompt('Цена мастеру, ₽:', '0')) || 0;
+  const pc = parseFloat(prompt('Цена клиенту, ₽:', '0')) || 0;
+  state.priceList.push({cat, name, unit, pm, pc});
+  save();
+  renderPrice();
+}
+
+function renameCategory(oldCat) {
+  const newCat = prompt('Новое название раздела:', oldCat);
+  if (!newCat || newCat===oldCat) return;
+  state.priceList.forEach(p => {
+    if (p.cat===oldCat) p.cat = newCat;
+  });
+  save();
+  renderPrice();
+}
+
+function deleteCategory(cat) {
+  if (!confirm(`Удалить раздел "${cat}" и все его позиции?`)) return;
+  state.priceList = state.priceList.filter(p => p.cat!==cat);
+  save();
+  renderPrice();
+}
+
+function addCategory() {
+  const name = prompt('Название нового раздела:');
+  if (!name) return;
+  // Проверяем, нет ли уже такого
+  if (getCategories().includes(name)) {
+    alert('Такой раздел уже есть!');
+    return;
+  }
+  // Добавляем пустую позицию-заглушку, чтобы раздел появился
+  state.priceList.push({cat:name, name:'(новая позиция)', unit:'шт', pm:0, pc:0});
+  save();
+  renderPrice();
+  // Сразу предлагаем добавить реальную позицию
+  setTimeout(() => addPosition(name), 100);
+}
+
+function resetPrice() {
+  if (!confirm('Сбросить прайс к стандартному? Все ваши изменения пропадут.')) return;
+  state.priceList = JSON.parse(JSON.stringify(DEFAULT_PRICE));
+  save();
+  renderPrice();
+  alert('Прайс сброшен ✓');
+}
+
+// ===== МОДАЛКА ДОБАВЛЕНИЯ РАБОТЫ =====
+function openPriceModal(roomId) {
+  state.currentRoomId = roomId;
+  document.getElementById('priceModal').classList.add('show');
+  document.getElementById('modalSearch').value = '';
+  renderModalPrice();
+}
+
+function closeModal() {
+  document.getElementById('priceModal').classList.remove('show');
+}
+
+function renderModalPrice() {
+  const search = document.getElementById('modalSearch').value.toLowerCase();
+  const el = document.getElementById('modalPriceList');
+  const categories = getCategories();
+  
+  let html = '';
+  categories.forEach(cat => {
+    let positions = state.priceList.filter(p => p.cat===cat);
+    if (search) {
+      positions = positions.filter(p => p.name.toLowerCase().includes(search) || p.cat.toLowerCase().includes(search));
+    }
+    if (positions.length===0) return;
+    
+    html += `<h3>${cat}</h3>`;
+    html += positions.map(p => `
+      <div class="price-item" onclick="addWork(${JSON.stringify(p).replace(/"/g,'&quot;')})" style="background:#3a3a3a;padding:10px;border-radius:6px;margin:6px 0;cursor:pointer">
+        <div style="font-weight:bold">${p.name}</div>
+        <div style="font-size:11px;color:#aaa">${p.unit}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px">
+          <span class="master">Мастеру: ${p.pm} ₽</span>
+          <span class="client">Клиенту: ${p.pc} ₽</span>
+        </div>
+      </div>
+    `).join('');
+  });
+  
+  if (!html) html = '<p style="color:#aaa;text-align:center;padding:20px">Ничего не найдено</p>';
+  el.innerHTML = html;
+}
+
+function addWork(p) {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  const room = obj.rooms.find(r => r.id===state.currentRoomId);
+  room.items.push({name:p.name, unit:p.unit, qty:1, pm:p.pm, pc:p.pc});
+  save();
+  closeModal();
+  renderRooms();
+  renderSummary();
+}
+
+// ===== ПЕЧАТЬ И КОПИРОВАНИЕ =====
+function printKP() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  if (!obj) return;
+  const w = window.open('', '_blank');
+  let html = `<html><head><title>КП</title><style>body{font-family:Arial;padding:40px}h1{color:#f59e0b}.room{margin:20px 0}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}.total{font-size:20px;font-weight:bold;color:#f59e0b;margin-top:20px}</style></head><body>`;
+  html += `<h1>🔨 Владимир Отделка ПИТЕР</h1><h2>Коммерческое предложение</h2>`;
+  html += `<p><b>Объект:</b> ${obj.name}</p><p><b>Адрес:</b> ${obj.address}</p><p><b>Заказчик:</b> ${obj.client.name}</p><p><b>Тел:</b> ${obj.client.phone}</p><hr>`;
+  let n=1, total=0;
+  obj.rooms.forEach(r => {
+    if (r.items.length===0) return;
+    html += `<div class="room"><h3>${r.name} (${r.area} м²)</h3><table><tr><th>№</th><th>Работа</th><th>Кол-во</th><th>Ед.</th><th>Цена</th><th>Сумма</th></tr>`;
+    r.items.forEach(i => {
+      const sum = i.qty*i.pc;
+      total += sum;
+      html += `<tr><td>${n++}</td><td>${i.name}</td><td>${i.qty}</td><td>${i.unit}</td><td>${i.pc} ₽</td><td><b>${sum.toLocaleString()} ₽</b></td></tr>`;
+    });
+    html += `</table></div>`;
+  });
+  html += `<div class="total">ИТОГО: ${total.toLocaleString()} ₽</div>`;
+  html += `<p style="margin-top:40px;color:#999">Материалы не включены. Прайс СПб 2026.</p>`;
+  html += `</body></html>`;
+  w.document.write(html);
+  w.document.close();
+  w.print();
+}
+
+function copyEstimate() {
+  const obj = state.objects.find(o => o.id===state.currentId);
+  if (!obj) return;
+  let text = `КП Владимир Отделка ПИТЕР\nОбъект: ${obj.name}\nАдрес: ${obj.address}\nЗаказчик: ${obj.client.name}\nТел: ${obj.client.phone}\n\n`;
+  let n=1, total=0;
+  obj.rooms.forEach(r => {
+    if (r.items.length===0) return;
+    text += `--- ${r.name} (${r.area} м²) ---\n`;
+    r.items.forEach(i => {
+      const sum = i.qty*i.pc;
+      total += sum;
+      text += `${n}. ${i.name} — ${i.qty} ${i.unit} × ${i.pc} ₽ = ${sum} ₽\n`;
+      n++;
+    });
+    text += '\n';
+  });
+  text += `ИТОГО: ${total.toLocaleString()} ₽`;
+  navigator.clipboard.writeText(text).then(() => alert('Скопировано ✓'));
+}
+
+init();
+</script>
+
+</body>
+</html>
