@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a1d23">
+<title>Владимир Отделка ПИТЕР — Калькулятор сметы</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #1a1d23; color: #e4e7eb;
+    padding: 16px; padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    min-height: 100vh;
+  }
+  .header { text-align: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f59e0b; }
+  .header h1 { color: #f59e0b; font-size: 20px; margin-bottom: 4px; }
+  .header p { color: #8b95a5; font-size: 12px; }
+
+  .nav {
+    display: flex; gap: 6px; margin-bottom: 16px;
+    background: #252b3d; padding: 6px; border-radius: 12px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .nav button {
+    flex: 1; background: transparent; color: #8b95a5; border: none;
+    padding: 12px 8px; border-radius: 8px; cursor: pointer;
+    font-weight: 600; font-size: 14px; min-height: 44px;
+  }
+  .nav button.active { background: #f59e0b; color: #1a1d23; }
+
+  .card {
+    background: #242831; border: 1px solid #3a3f4b;
+    border-radius: 12px; padding: 14px; margin-bottom: 14px;
+  }
+  .card h2 {
+    color: #f59e0b; font-size: 17px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .btn {
+    background: #f59e0b; color: #1a1d23; border: none;
+    padding: 14px; border-radius: 10px; cursor: pointer;
+    font-weight: 700; font-size: 15px; width: 100%;
+    margin-top: 10px; min-height: 48px;
+  }
+  .btn:active { transform: scale(0.98); opacity: 0.9; }
+  .btn.danger { background: #ef4444; color: white; width: auto; padding: 8px 12px; font-size: 13px; margin: 0; min-height: 36px; }
+  .btn.small {
+    width: 100%; padding: 12px; font-size: 14px; margin-top: 8px;
+    background: #3a3f4b; color: #e4e7eb; border: 1px solid #4b5563; min-height: 44px;
+  }
+  .btn.success { background: #10b981; color: white; }
+  .btn.secondary { background: #3b82f6; color: white; }
+  .btn.ghost { background: transparent; border: 1px solid #4b5563; color: #e4e7eb; }
+
+  label { display: block; font-size: 12px; color: #8b95a5; margin-bottom: 4px; margin-top: 10px; }
+  input, select, textarea {
+    width: 100%; padding: 12px; background: #2e333d;
+    border: 1px solid #3a3f4b; color: #e4e7eb; border-radius: 8px;
+    font-size: 16px; /* prevents iOS zoom */
+  }
+  input:focus, select:focus { outline: none; border-color: #f59e0b; }
+
+  .room {
+    background: #2e333d; padding: 12px; border-radius: 10px;
+    margin: 10px 0; border: 1px solid #3a3f4b;
+  }
+  .room-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+  .room-title { font-weight: 700; font-size: 16px; }
+  .room-meta { font-size: 12px; color: #8b95a5; margin-top: 4px; }
+
+  .work {
+    background: #242831; padding: 12px; border-radius: 8px;
+    margin: 8px 0; border: 1px solid #3a3f4b;
+  }
+  .work-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+  .work-name { font-weight: 600; font-size: 14px; flex: 1; }
+  .work-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .work-fields input { margin: 0; padding: 10px; font-size: 15px; }
+  .work-fields label { font-size: 11px; margin-bottom: 2px; margin-top: 0; }
+  .totals {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid #3a3f4b; font-size: 13px;
+  }
+  .master { color: #f59e0b; font-weight: 700; }
+  .client { color: #3b82f6; font-weight: 700; }
+
+  .price-item {
+    background: #2e333d; padding: 12px; border-radius: 10px;
+    margin: 8px 0; border: 1px solid #3a3f4b;
+  }
+  .price-name-input {
+    font-weight: 600; margin-bottom: 4px; background: transparent;
+    border: none; border-bottom: 1px dashed #555; color: #e4e7eb; width: 100%;
+    font-size: 15px; padding: 6px 0;
+  }
+  .price-cat-input, .price-unit-input {
+    background: transparent; border: none; color: #8b95a5; font-size: 12px;
+  }
+  .price-cat-input { width: 110px; }
+  .price-unit-input { width: 60px; }
+  .price-row { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .price-input { width: 90px !important; text-align: right; padding: 8px !important; font-size: 15px !important; }
+
+  .modal {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.88); z-index: 100; padding: 16px;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .modal.show { display: block; }
+  .modal-content {
+    background: #242831; max-width: 600px; margin: 12px auto;
+    padding: 18px; border-radius: 14px; border: 1px solid #3a3f4b;
+  }
+  .close { float: right; cursor: pointer; font-size: 28px; color: #8b95a5; line-height: 1; padding: 4px 8px; }
+
+  .summary { background: #2e333d; padding: 14px; border-radius: 10px; margin-top: 12px; border: 1px solid #3a3f4b; }
+  .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #3a3f4b; font-size: 14px; }
+  .summary-total { font-size: 18px; font-weight: 800; color: #f59e0b; margin-top: 10px; padding-top: 10px; border-top: 2px solid #f59e0b; text-align: right; }
+
+  .analysis {
+    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    padding: 12px; margin-top: 12px; font-size: 13px; line-height: 1.45;
+  }
+  .analysis h3 { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .analysis .ok { color: #10b981; }
+  .analysis .warn { color: #f59e0b; }
+  .analysis .bad { color: #ef4444; }
+
+  .empty { text-align: center; padding: 24px 12px; color: #8b95a5; font-style: italic; font-size: 14px; }
+
+  .toast {
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom));
+    left: 16px; right: 16px; background: #10b981; color: #fff;
+    padding: 14px 18px; border-radius: 12px; font-weight: 600; font-size: 14px;
+    text-align: center; z-index: 200; opacity: 0; transform: translateY(20px);
+    transition: 0.25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.err { background: #ef4444; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 420px) {
+    .work-fields { grid-template-columns: 1fr 1fr; }
+    .work-fields > div:last-child { grid-column: 1 / -1; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔨 Владимир Отделка ПИТЕР</h1>
+  <p>Калькулятор сметы · Прайс СПб 2026 · Мобильная версия</p>
+</div>
+
+<div class="nav">
+  <button class="active" data-tab="objects" onclick="showTab('objects')">Объекты</button>
+  <button data-tab="estimate" onclick="showTab('estimate')">Смета</button>
+  <button data-tab="price" onclick="showTab('price')">Прайс</button>
+</div>
+
+<div id="tab-objects">
+  <div class="card">
+    <h2>🏢 Объекты</h2>
+    <button class="btn" onclick="createObject()">➕ Новый объект</button>
+    <div id="objectsList" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="tab-estimate" style="display:none">
+  <div class="card">
+    <h2>📝 Данные объекта</h2>
+    <label>Название объекта</label>
+    <input type="text" id="objName" placeholder="Попова 27, кв. 15" onchange="autoSaveObject()">
+    <label>Адрес</label>
+    <input type="text" id="objAddress" placeholder="ул. Профессора Попова, 27" onchange="autoSaveObject()">
+    <div class="form-row">
+      <div>
+        <label>Заказчик</label>
+        <input type="text" id="objClient" placeholder="Иван Иванов" onchange="autoSaveObject()">
+      </div>
+      <div>
+        <label>Телефон</label>
+        <input type="text" id="objPhone" placeholder="+7 (999) 000-00-00" onchange="autoSaveObject()">
+      </div>
+    </div>
+    <button class="btn ghost" onclick="saveObject()" style="margin-top:12px;">💾 Сохранить данные</button>
+  </div>
+
+  <div class="card">
+    <h2>🏠 Помещения</h2>
+    <button class="btn" onclick="openAddRoomModal()">➕ Добавить помещение</button>
+    <div id="roomsList" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <h2>📊 Итого и анализ</h2>
+    <div id="summary"></div>
+    <div id="analysis"></div>
+    <button class="btn secondary" onclick="printKP()" style="margin-top:12px;">🖨 Печать КП</button>
+    <button class="btn success" onclick="copyEstimate()" style="margin-top:8px;">📋 Копировать текст</button>
+  </div>
+</div>
+
+<div id="tab-price" style="display:none">
+  <div class="card">
+    <h2>📖 Редактор прайс-листа</h2>
+    <p style="font-size:12px; color:#8b95a5; margin-bottom:10px;">Меняй цены и названия. Всё сохраняется автоматически в этом браузере.</p>
+    <button class="btn small success" onclick="addNewPriceItem()" style="margin-bottom:12px;">➕ Добавить позицию</button>
+    <input type="text" id="priceSearch" placeholder="🔍 Поиск по прайсу..." oninput="renderPriceListEditor()">
+    <div id="priceListTab" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- Модалка: добавить помещение -->
+<div class="modal" id="roomModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeRoomModal()">✕</span>
+    <h2 style="color:#f59e0b; margin-bottom:12px;">Новое помещение</h2>
+    <label>Название</label>
+    <input type="text" id="newRoomName" placeholder="Ванная, Кухня, Коридор…">
+    <label>Площадь, м² (необязательно)</label>
+    <input type="number" id="newRoomArea" placeholder="0" step="0.1" min="0">
+    <button class="btn" onclick="confirmAddRoom()">Добавить</button>
+  </div>
+</div>
+
+<!-- Модалка: добавить работу из прайса -->
+<div class="modal" id="priceModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">✕</span>
+    <h2 style="color:#f59e0b; margin-bottom:8px;">Выберите работу</h2>
+    <p style="font-size:12px; color:#8b95a5; margin-bottom:12px;">Нажми на работу, чтобы добавить в помещение.</p>
+    <input type="text" id="modalSearch" placeholder="🔍 Поиск..." oninput="renderModalPrice()">
+    <div id="modalPriceList" style="margin-top:12px; max-height:55vh; overflow-y:auto;"></div>
+    <button class="btn small" onclick="openCustomWork()" style="margin-top:12px;">✏️ Своя работа (разово)</button>
+  </div>
+</div>
+
+<!-- Модалка: своя работа -->
+<div class="modal" id="customWorkModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeCustomWork()">✕</span>
+    <h2 style="color:#f59e0b; margin-bottom:12px;">Своя работа</h2>
+    <label>Название</label>
+    <input type="text" id="customName" placeholder="Например: Монтаж обрамления">
+    <label>Единица</label>
+    <input type="text" id="customUnit" value="м²" placeholder="м², шт, м.п.">
+    <div class="form-row">
+      <div>
+        <label>Цена мастеру, ₽</label>
+        <input type="number" id="customPm" value="0" min="0">
+      </div>
+      <div>
+        <label>Цена клиенту, ₽</label>
+        <input type="number" id="customPc" value="0" min="0">
+      </div>
+    </div>
+    <button class="btn" onclick="confirmCustomWork()">Добавить в смету</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_PRICE = [
+  {cat:"Демонтаж", name:"Демонтаж обоев", unit:"м²", pm:150, pc:200},
+  {cat:"Демонтаж", name:"Демонтаж плитки со стен", unit:"м²", pm:450, pc:600},
+  {cat:"Демонтаж", name:"Демонтаж плитки с пола", unit:"м²", pm:550, pc:700},
+  {cat:"Демонтаж", name:"Демонтаж стяжки", unit:"м²", pm:600, pc:800},
+  {cat:"Демонтаж", name:"Демонтаж перегородки газобетон", unit:"м²", pm:650, pc:850},
+  {cat:"Подготовка", name:"Обеспыливание и грунтование", unit:"м²", pm:80, pc:120},
+  {cat:"Подготовка", name:"Укрытие пола картоном", unit:"м²", pm:50, pc:80},
+  {cat:"Черновые", name:"Штукатурка стен по маякам", unit:"м²", pm:520, pc:680},
+  {cat:"Черновые", name:"Стяжка пола (полусухая)", unit:"м²", pm:550, pc:750},
+  {cat:"Черновые", name:"Гидроизоляция", unit:"м²", pm:350, pc:480},
+  {cat:"Электрика", name:"Штробление стен", unit:"м.п.", pm:280, pc:380},
+  {cat:"Электрика", name:"Прокладка кабеля в гофре", unit:"м.п.", pm:90, pc:130},
+  {cat:"Электрика", name:"Установка подрозетника", unit:"шт", pm:220, pc:320},
+  {cat:"Электрика", name:"Расключение розетки/выключателя", unit:"шт", pm:180, pc:260},
+  {cat:"Сантехника", name:"Монтаж водорозетки", unit:"шт", pm:450, pc:650},
+  {cat:"Сантехника", name:"Разводка труб (точка)", unit:"точка", pm:950, pc:1300},
+  {cat:"Сантехника", name:"Установка инсталляции", unit:"шт", pm:2800, pc:3800},
+  {cat:"Плитка", name:"Укладка плитки на стены", unit:"м²", pm:1200, pc:1600},
+  {cat:"Плитка", name:"Укладка плитки на пол", unit:"м²", pm:1100, pc:1450},
+  {cat:"Плитка", name:"Затирка швов", unit:"м²", pm:280, pc:380},
+  {cat:"Плитка", name:"Устройство ниши с полками", unit:"компл.", pm:4500, pc:6500},
+  {cat:"Полы", name:"Укладка ламината", unit:"м²", pm:320, pc:450},
+  {cat:"Полы", name:"Монтаж тёплого пола (мат)", unit:"м²", pm:450, pc:650},
+  {cat:"Стены", name:"Поклейка обоев", unit:"м²", pm:280, pc:380},
+  {cat:"Стены", name:"Покраска стен", unit:"м²", pm:220, pc:320},
+  {cat:"Потолки", name:"Натяжной потолок", unit:"м²", pm:450, pc:650},
+  {cat:"Потолки", name:"Потолок ГКЛ 1 уровень", unit:"м²", pm:850, pc:1200},
+  {cat:"Двери", name:"Установка межкомнатной двери", unit:"шт", pm:2800, pc:3800},
+  {cat:"Сантехника чистовая", name:"Установка унитаза", unit:"шт", pm:1800, pc:2500},
+  {cat:"Сантехника чистовая", name:"Установка ванны", unit:"шт", pm:3200, pc:4500},
+  {cat:"Сантехника чистовая", name:"Установка смесителя", unit:"шт", pm:600, pc:900},
+  {cat:"Прочее", name:"Вывоз мусора", unit:"рейс", pm:8000, pc:12000},
+  {cat:"Прочее", name:"Мобилизация объекта", unit:"компл.", pm:5000, pc:8000}
+];
+
+let state = {
+  objects: [],
+  currentId: null,
+  currentRoomId: null,
+  priceList: []
+};
+
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function init() {
+  try {
+    const savedObjects = localStorage.getItem('vladimir_objects_v5');
+    if (savedObjects) state.objects = JSON.parse(savedObjects);
+    const savedPrice = localStorage.getItem('vladimir_price_v5');
+    if (savedPrice) {
+      state.priceList = JSON.parse(savedPrice);
+    } else {
+      state.priceList = JSON.parse(JSON.stringify(DEFAULT_PRICE));
+      localStorage.setItem('vladimir_price_v5', JSON.stringify(state.priceList));
+    }
+  } catch(e) { console.error(e); }
+  renderObjects();
+  renderPriceListEditor();
+}
+
+function saveObjects() {
+  localStorage.setItem('vladimir_objects_v5', JSON.stringify(state.objects));
+}
+function savePrice() {
+  localStorage.setItem('vladimir_price_v5', JSON.stringify(state.priceList));
+}
+
+function showTab(tab) {
+  ['objects','estimate','price'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = (t===tab) ? '' : 'none';
+  });
+  document.querySelectorAll('.nav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  if (tab === 'estimate') {
+    if (!state.currentId && state.objects.length) {
+      state.currentId = state.objects[0].id;
+    }
+    if (state.currentId) loadObject();
+    else {
+      document.getElementById('roomsList').innerHTML = '<div class="empty">Сначала создайте или выберите объект на вкладке «Объекты»</div>';
+      document.getElementById('summary').innerHTML = '';
+      document.getElementById('analysis').innerHTML = '';
+    }
+  }
+  if (tab === 'price') renderPriceListEditor();
+}
+
+function createObject() {
+  const obj = {
+    id: Date.now(),
+    name: '',
+    address: '',
+    client: { name: '', phone: '' },
+    rooms: []
+  };
+  state.objects.push(obj);
+  state.currentId = obj.id;
+  saveObjects();
+  showTab('estimate');
+  renderObjects();
+  toast('Объект создан');
+}
+
+function renderObjects() {
+  const el = document.getElementById('objectsList');
+  if (!state.objects.length) {
+    el.innerHTML = '<div class="empty">Объектов пока нет. Нажмите «Новый объект».</div>';
+    return;
+  }
+  el.innerHTML = state.objects.map(o => {
+    const total = o.rooms.reduce((s, r) => s + r.items.reduce((s2, i) => s2 + (i.qty * i.pc), 0), 0);
+    const isActive = o.id === state.currentId;
+    return `<div class="room" style="cursor:pointer; ${isActive ? 'border-color:#f59e0b;' : ''}" onclick="selectObject(${o.id})">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+        <div style="flex:1;">
+          <div style="font-weight:700; font-size:16px;">${o.name || 'Без названия'}</div>
+          <div style="font-size:12px; color:#8b95a5; margin-top:4px;">${o.address || '—'} · ${o.rooms.length} помещ.</div>
+          <div style="color:#f59e0b; font-weight:800; margin-top:6px; font-size:18px;">${total.toLocaleString('ru-RU')} ₽</div>
+        </div>
+        <button class="btn danger" onclick="event.stopPropagation(); deleteObject(${o.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectObject(id) {
+  state.currentId = id;
+  showTab('estimate');
+  renderObjects();
+}
+
+function deleteObject(id) {
+  if (!confirm('Удалить объект и всю смету по нему?')) return;
+  state.objects = state.objects.filter(o => o.id !== id);
+  if (state.currentId === id) state.currentId = state.objects[0]?.id || null;
+  saveObjects();
+  renderObjects();
+  if (state.currentId) loadObject();
+  toast('Объект удалён');
+}
+
+function loadObject() {
+  const obj = state.objects.find(o => o.id === state.currentId);
+  if (!obj) return;
+  document.getElementById('objName').value = obj.name || '';
+  document.getElementById('objAddress').value = obj.address || '';
+  document.getElementById('objClient').value = obj.client?.name || '';
+  document.getElementById('objPhone').value = obj.client?.phone || '';
+  renderRooms();
+  renderSummary();
+}
+
+function autoSaveObject() {
+  const obj = state.objects.find(o => o.id === state.currentId);
+  if (!obj) return;
+  obj.name = document.getElementById('objName').value;
+  obj.address = document.getElementById('objAddress').value;
+  obj.client = {
+    name: document.getElementById('objClient').value,
+    phone: document.getElementById('objPhone').value
+  };
+  saveObjects();
+  renderObjects();
+}
+
+function saveObject() {
+  autoSaveObject();
+  toast('Данные объекта сохранены');
+}
+
+function openAddRoomModal() {
+  if (!state.currentId) {
+    toast('Сначала создайте объект', true);
+    return;
+  }
+  document.getElementById('newRoomName').value = '';
+  document.getElementById('newRoomArea').value = '';
+  document.getElementById('roomModal').classList.add('show');
+  setTimeout(() => document.getElementById('newRoomName').focus(), 100);
+}
+
+function closeRoomModal() {
+  document.getElementById('roomModal').classList.remove('show');
+}
+
+function confirmAddRoom() {
+  const name = document.getElementById('newRoomName').value.trim();
+  if (!name) {
+    toast('Введите название помещения', true);
+    return;
+  }
+  const area = parseFloat(document.getElementById('newRoomArea').value) || 0;
+  const obj = state.objects.find(o => o.id === state.currentId);
+  if (!obj) return;
+  obj.rooms.push({ id: Date.now(), name, area, items: [] });
+  saveObjects();
+  closeRoomModal();
+  renderRooms();
+  renderSummary();
+  toast('Помещение «' + name + '» добавлено');
+}
+
+function renderRooms() {
+  const obj = state.objects.find(o => o.id === state.currentId);
+  const el = document.getElementById('roomsList');
+  if (!obj || !obj.rooms.length) {
+    el.innerHTML = '<div class="empty">Помещений нет. Добавьте первое.</div>';
+    return;
+  }
+  el.innerHTML = obj.rooms.map(r => {
+    const total = r.items.reduce((s, i) => s + (i.qty * i.pc), 0);
+    return `<div class="room">
+      <div class="room-header">
+        <div>
+          <div class="room-title">🏠 ${r.name}</div>
+          <div class="room-meta">${r.area ? r.area + ' м² · ' : ''}Итого клиенту: <span style="color:#3b82f6; font-weight:700;">${total.toLocaleString('ru-RU')} ₽</span></div>
+        </div>
+        <button class="btn danger" onclick="deleteRoom(${r.id})">🗑</button>
+      </div>
+      ${r.items.length === 0 ? '<div class="empty" style="padding:12px;">Работы не добавлены</div>' : ''}
+      ${r.items.map((it, idx) => `
+        <div class="work">
+          <div class="work-header">
+            <div class="work-name">${it.name} <span style="color:#8b95a5; font-weight:400; font-size:12px;">(${it.unit})</span></div>
+            <button class="btn danger" onclick="deleteItem(${r.id}, ${idx})">✕</button>
+          </div>
+          <div class="work-fields">
+            <div><label>Кол-во</label><input type="number" step="0.01" min="0" value="${it.qty}" onchange="updateItem(${r.id}, ${idx}, 'qty', this.value)"></div>
+            <div><label>Мастеру</label><input type="number" min="0" value="${it.pm}" onchange="updateItem(${r.id}, ${idx}, 'pm', this.value)"></div>
+            <div><label>Клиенту</label><input type="number" min="0" value="${it.pc}" onchange="updateItem(${r.id}, ${idx}, 'pc', this.value)"></div>
+          </div>
+          <div class="totals">
+            <span class="master">Мастеру: ${(it.qty * it.pm).toLocaleString('ru-RU')} ₽</span>
+            <span class="client">Клиенту: ${(it.qty * it.pc).toLocaleString('ru-RU')} ₽</span>
+          </div>
+        </div>
+      `).join('')}
+      <button class="btn small" onclick="openPriceModal(${r.id})" style="margin-top:10px;">➕ Добавить работу из прайса</button>
+    </div>`;
+  }).join('');
+}
+
+function updateItem(roomId, idx, field, value) {
+  const obj = state.objects.find(o => o.id === state.currentId);
+  const room = obj?.rooms.find(r => r.id === roomId);
+  if (room && room.items[idx]) {
+    room.items[idx][field] = parseFloat(value) || 0;
+    saveObjects();
+    renderRooms();
+    renderSummary();
+  }
+}
+
+function deleteItem(roomId, idx) {
+  const obj = state.objects.find(o => o.id === state.currentId);
+  const room = obj?.rooms.find(r => r.id === roomId);
+  if (room) {
+    room.items.splice(idx, 1);
+    saveObjects();
+    renderRooms();
+    renderSummary();
+    toast('Работа удалена');
+  }
+}
+
+function deleteRoom(roomId) {
+  if (!confirm('Удалить помещение и все работы в нём?')) return;
+  const obj = state.objects.find(o => o.id === state.currentId);
+  if (obj) {
+    obj.rooms = obj.rooms.filter(r => r.id !== roomId);
+    saveObjects();
+    renderRooms();
+    renderSummary();
+    toast('Помещение удалено');
+  }
+}
+
+function renderSummary() {
+  const obj = state.objects.find(o => o.id === state.currentId);
+  const el = document.getElementById('summary');
+  const an = document.getElementById('analysis');
+  if (!obj) { el.innerHTML = ''; an.innerHTML = ''; return; }
+
+  let master = 0, client = 0, itemsCount = 0;
+  obj.rooms.forEach(r => r.items.forEach(i => {
+    master += i.qty * i.pm;
+    client += i.qty * i.pc;
+    itemsCount++;
+  }));
+  const profit = client - master;
+  const margin = client > 0 ? (profit / client * 100) : 0;
+
+  el.innerHTML = `
+    <div class="summary-row"><span>Себестоимость (мастеру)</span><span class="master">${master.toLocaleString('ru-RU')} ₽</span></div>
+    <div class="summary-row"><span>К оплате (клиенту)</span><span class="client">${client.toLocaleString('ru-RU')} ₽</span></div>
+    <div class="summary-total">Прибыль: ${profit.toLocaleString('ru-RU')} ₽</div>
+  `;
+
+  // SIBS-light: простой анализ и рекомендация
+  let tip = '';
+  let cls = 'ok';
+  if (itemsCount === 0) {
+    tip = 'Добавьте работы в помещения, чтобы увидеть анализ маржи.';
+    cls = 'warn';
+  } else if (margin < 15) {
+    tip = `Маржа ${margin.toFixed(0)}% — низкая. Рекомендуется пересмотреть цены клиенту или объём работ. Риск убытка при допработах.`;
+    cls = 'bad';
+  } else if (margin < 25) {
+    tip = `Маржа ${margin.toFixed(0)}% — приемлемо, но запас небольшой. Закладывайте резерв 5–10% на непредвиденные работы.`;
+    cls = 'warn';
+  } else {
+    tip = `Маржа ${margin.toFixed(0)}% — хороший запас. Есть возможность гибко реагировать на допработы без потери прибыли.`;
+    cls = 'ok';
+  }
+
+  an.innerHTML = `
+    <div class="analysis">
+      <h3>Анализ сметы</h3>
+      <div class="${cls}">${tip}</div>
+      <div style="margin-top:8px; color:#94a3b8; font-size:12px;">
+        Работ: ${itemsCount} · Помещений: ${obj.rooms.length}<br>
+        Разница клиент − мастер = прибыль до налогов и накладных.
+      </div>
+    </div>
+  `;
+}
+
+// --- Прайс ---
+function renderPriceListEditor() {
+  const search = (document.getElementById('priceSearch')?.value || '').toLowerCase();
+  const el = document.getElementById('priceListTab');
+  const filtered = state.priceList.filter(p =>
+    p.name.toLowerCase().includes(search) || p.cat.toLowerCase().includes(search)
+  );
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty">Ничего не найдено</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(p => {
+    const realIndex = state.priceList.indexOf(p);
+    return `
+    <div class="price-item">
+      <input type="text" class="price-name-input" value="${escapeAttr(p.name)}" onchange="updatePriceItem(${realIndex}, 'name', this.value)">
+      <div style="margin-top:4px;">
+        <input type="text" class="price-cat-input" value="${escapeAttr(p.cat)}" onchange="updatePriceItem(${realIndex}, 'cat', this.value)"> ·
+        <input type="text" class="price-unit-input" value="${escapeAttr(p.unit)}" onchange="updatePriceItem(${realIndex}, 'unit', this.value)">
+      </div>
+      <div class="price-row">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:11px; color:#f59e0b;">Мастеру</span>
+          <input type="number" class="price-input" value="${p.pm}" onchange="updatePriceItem(${realIndex}, 'pm', this.value)">
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:11px; color:#3b82f6;">Клиенту</span>
+          <input type="number" class="price-input" value="${p.pc}" onchange="updatePriceItem(${realIndex}, 'pc', this.value)">
+        </div>
+        <button class="btn danger" onclick="deletePriceItem(${realIndex})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escapeAttr(s) {
+  return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+function updatePriceItem(index, field, value) {
+  if (field === 'pm' || field === 'pc') value = parseFloat(value) || 0;
+  state.priceList[index][field] = value;
+  savePrice();
+}
+
+function addNewPriceItem() {
+  state.priceList.push({ cat: 'Новое', name: 'Новая работа', unit: 'м²', pm: 0, pc: 0 });
+  savePrice();
+  renderPriceListEditor();
+  toast('Позиция добавлена');
+}
+
+function deletePriceItem(index) {
+  if (!confirm('Удалить позицию из прайса?')) return;
+  state.priceList.splice(index, 1);
+  savePrice();
+  renderPriceListEditor();
+  toast('Позиция удалена');
+}
+
+// --- Модалка прайса ---
+function openPriceModal(roomId) {
+  state.currentRoomId = roomId;
+  document.getElementById('modalSearch').value = '';
+  document.getElementById('priceModal').classList.add('show');
+  renderModalPrice();
+}
+
+function closeModal() {
+  document.getElementById('priceModal').classList.remove('show');
+}
+
+function renderModalPrice() {
+  const search = (document.getElementById('modalSearch').value || '').toLowerCase();
+  const el = document.getElementById('modalPriceList');
+  const filtered = state.priceList.filter(p =>
+    p.name.toLowerCase().includes(search) || p.cat.toLowerCase().includes(search)
+  );
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty">Ничего не найдено</div>';
+    return;
+  }
+  el.innerHTML = filtered.map((p, i) => `
+    <div class="price-item" style="cursor:pointer;" onclick="addWorkToEstimate(${state.priceList.indexOf(p)})">
+      <div class="work-name" style="margin-bottom:4px;">${p.name}</div>
+      <div style="font-size:11px; color:#8b95a5; margin-bottom:8px;">${p.cat} · ${p.unit}</div>
+      <div class="totals" style="border:none; padding:0; margin:0;">
+        <span class="master">Мастеру: ${p.pm} ₽</span>
+        <span class="client">Клиенту: ${p.pc} ₽</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addWorkToEstimate(priceIndex) {
+  const p = state.priceList[priceIndex];
+  if (!p) return;
+  const obj = state.objects.find(o => o.id === state.currentId);
+  const room = obj?.rooms.find(r => r.id === state.currentRoomId);
+  if (!room) {
+    toast('Помещение не найдено', true);
+    return;
+  }
+  room.items.push({ name: p.name, unit: p.unit, qty: 1, pm: p.pm, pc: p.pc });
+  saveObjects();
+  closeModal();
+  renderRooms();
+  renderSummary();
+  toast('«' + p.name + '» добавлено');
+}
+
+function openCustomWork() {
+  closeModal();
+  document.getElementById('customName').value = '';
+  document.getElementById('customUnit').value = 'м²';
+  document.getElementById('customPm').value = '0';
+  document.getElementById('customPc').value = '0';
+  document.getElementById('customWorkModal').classList.add('show');
+  setTimeout(() => document.getElementById('customName').focus(), 100);
+}
+
+function closeCustomWork() {
+  document.getElementById('customWorkModal').classList.remove('show');
+}
+
+function confirmCustomWork() {
+  const name = document.getElementById('customName').value.trim();
+  if (!name) {
+    toast('Введите название', true);
+    return;
+  }
+  const unit = document.getElementById('customUnit').value.trim() || 'шт';
+  const pm = parseFloat(document.getElementById('customPm').value) || 0;
+  const pc = parseFloat(document.getElementById('customPc').value) || 0;
+  const obj = state.objects.find(o => o.id === state.currentId);
+  const room = obj?.rooms.find(r => r.id === state.currentRoomId);
+  if (!room) return;
+  room.items.push({ name, unit, qty: 1, pm, pc });
+  saveObjects();
+  closeCustomWork();
+  renderRooms();
+  renderSummary();
+  toast('Работа добавлена');
+}
+
+// --- Экспорт ---
+function printKP() {
+  const obj = state.objects.find(o => o.id === state.currentId);
+  if (!obj) { toast('Выберите объект', true); return; }
+  const w = window.open('', '_blank');
+  let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>КП — ${obj.name || 'Объект'}</title>
+  <style>body{font-family:Arial,sans-serif;padding:32px;color:#333}h1{color:#d97706;text-align:center}.room{margin:22px 0}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px}th{background:#f9f9f9}.total{font-size:20px;font-weight:bold;color:#d97706;margin-top:24px;text-align:right;border-top:2px solid #d97706;padding-top:12px}.info{margin-bottom:24px;line-height:1.5}</style></head><body>`;
+  html += `<h1>Владимир Отделка ПИТЕР</h1><h2 style="text-align:center;color:#666;font-weight:normal;font-size:16px;">Коммерческое предложение</h2><hr>`;
+  html += `<div class="info"><p><b>Объект:</b> ${obj.name || '—'}</p><p><b>Адрес:</b> ${obj.address || '—'}</p><p><b>Заказчик:</b> ${obj.client?.name || '—'}</p><p><b>Телефон:</b> ${obj.client?.phone || '—'}</p></div>`;
+  let n = 1, total = 0;
+  obj.rooms.forEach(r => {
+    if (!r.items.length) return;
+    html += `<div class="room"><h3 style="color:#d97706;border-bottom:1px solid #d97706;padding-bottom:4px;">${r.name}${r.area ? ' (' + r.area + ' м²)' : ''}</h3><table><tr><th>№</th><th>Работа</th><th>Кол-во</th><th>Ед.</th><th>Цена</th><th>Сумма</th></tr>`;
+    r.items.forEach(i => {
+      const sum = i.qty * i.pc;
+      total += sum;
+      html += `<tr><td>${n++}</td><td>${i.name}</td><td>${i.qty}</td><td>${i.unit}</td><td>${i.pc.toLocaleString('ru-RU')}</td><td><b>${sum.toLocaleString('ru-RU')}</b></td></tr>`;
+    });
+    html += `</table></div>`;
+  });
+  html += `<div class="total">ИТОГО К ОПЛАТЕ: ${total.toLocaleString('ru-RU')} ₽</div>`;
+  html += `<p style="margin-top:40px;color:#999;font-size:12px;text-align:center;">Материалы в стоимость не включены. Цены ориентировочные.</p></body></html>`;
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+
+function copyEstimate() {
+  const obj = state.objects.find(o => o.id === state.currentId);
+  if (!obj) { toast('Выберите объект', true); return; }
+  let text = `КП: Владимир Отделка ПИТЕР\nОбъект: ${obj.name || '—'}\nАдрес: ${obj.address || '—'}\nЗаказчик: ${obj.client?.name || '—'}\nТел: ${obj.client?.phone || '—'}\n\n`;
+  let n = 1, total = 0;
+  obj.rooms.forEach(r => {
+    if (!r.items.length) return;
+    text += `— ${r.name}${r.area ? ' (' + r.area + ' м²)' : ''} —\n`;
+    r.items.forEach(i => {
+      const sum = i.qty * i.pc;
+      total += sum;
+      text += `${n}. ${i.name} — ${i.qty} ${i.unit} × ${i.pc} ₽ = ${sum.toLocaleString('ru-RU')} ₽\n`;
+      n++;
+    });
+    text += '\n';
+  });
+  text += `====================\nИТОГО: ${total.toLocaleString('ru-RU')} ₽`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => toast('Смета скопирована')).catch(() => toast('Не удалось скопировать', true));
+  } else {
+    prompt('Скопируйте текст:', text);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
